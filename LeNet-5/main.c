@@ -14,6 +14,7 @@
 
 #define DEBUG 0 // Paulie D.
 
+// Paulie D. just a prettier progress bar, saves screen space
 void showProgress(int progress, int total) {
   int bar_width = 50;
   float ratio = (float)progress / total;
@@ -133,10 +134,6 @@ void print_image(image img, int n) {
 	printf("\n");
 }
 
-int predict_single(LeNet5 *lenet, image img, int n, int test_label) {
-	return Predict(lenet, img, 10); // lets go look at this
-}
-
 // the rest is all unedited
 // read_data needs to be replaced
 int read_data(unsigned char(*data)[28][28], unsigned char label[], const int count, const char data_file[], const char label_file[])
@@ -249,13 +246,15 @@ int main()
 		return 1;
 	}
 
-	for (int i = 0; i < 100; i++) { // test 100 images
+	int correct = 0;
+	int num_to_test = 1000;
+	for (int i = 0; i < num_to_test; i++) { // test 100 images
 		image img;
 		int test_label = read_from_csv(csv, 28, img); // returns label
 		if (test_label < 0) {
 			return test_label; // failure to read
 		}
-		if (DEBUG || 1) {
+		if (DEBUG) {
 			//printf("Recieved image: %d.\n", test_label);
 			print_image(img, 28);
 		}
@@ -266,8 +265,12 @@ int main()
 			return 1;
 		}
 		load(lenet, LENET_FILE);
-		int p = predict_single(lenet, img, 28, test_label);
-		printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+		int p = Predict(lenet, img, 10); // lets go look at this
+		if (p != test_label && 0) { // && 1 to display failures
+			printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+			print_image(img, 28);
+		}
+		if (DEBUG) printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
 	}
 	//foo();
 	return 0;
