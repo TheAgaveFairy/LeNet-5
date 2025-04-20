@@ -182,7 +182,10 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight, double *d_b
 		for (int x = 0; x < in_channels; ++x) {
 			const double *d_in_channel = d_input + (x * in_height * in_width);
 			const double *d_weight_xy = d_weight + (x * out_channels * k_sq + y * k_sq);
+
+			ConvoluteValid<<<gridDim, blockDim>>>(d_in_channel, d_weight_xy, d_temp, in_height, in_width);
 		}
+		cudaDeviceSynchronize();
 	}
 
 }
