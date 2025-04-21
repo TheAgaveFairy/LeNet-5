@@ -1,6 +1,8 @@
 #include "lenet.h"
+#include <cuda_runtime_api.h>
 #include <math.h>
 #include <memory.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -132,6 +134,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
   }
 
 // Paulie D. CUDA functions to replace FORWARD macros above
+// no padding "convolution" aka cross correlation
 __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
                                double *d_out, size_t in_height,
                                size_t in_width) {
@@ -168,19 +171,23 @@ __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
 }
 
 // c = a.dot(b) matrix multiplication, naive / nonoptimal
-__global__ void naiveOneDimKernel(double *a, double *b, double *c) {
+// a => m x l, b => l x n, c = m x n dimensions
+__global__ void naiveOneDimKernel(double *a, double *b, double *c, int m, int l,
+                                  int n) {
   int row = blockIdx.y * blockDim.y + threadIdx.y;
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (row < n && col < n) {
-    int sum = 0;
-    for (int k = 0; k < n; k++) {
+  if (row < m && col < n) {
+    double sum = 0;
+    for (int k = 0; k < l; k++) {
       sum += a[row * n + k] * b[k * n + col];
     }
-    c[row * n + col] = sum;
+    c[row * m + col] = sum;
   }
 }
 
+// performs addition of bias (1 per channel) and ReLU (currently hard coded
+// "action")
 __global__ void ActionAndBias(double *d_feature, size_t f_height,
                               size_t f_width, double bias) {
   size_t col = blockDim.x * blockIdx.x + threadIdx.x;
@@ -235,6 +242,7 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
 
       ConvoluteValid<<<gridDim, blockDim>>>(d_in_channel, d_weight_xy, d_temp,
                                             in_height, in_width);
+      gpuErrchk(cudaPeekAtLastError());
       cudaDeviceSynchronize();
 
       double *d_out_chan = d_out + y * h_out * w_out;
@@ -246,19 +254,67 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
   }
 }
 
+// void ConvolutePreparation(input, output, weight, bias) { return; }
+/*
+void flatten_2d(double *dest, double src[][], int rows, int cols) {
+  for (int r = 0; r < rows; r++)
+    for (int c = 0; c < rows; c++)
+      dest[r * rows + c] = src[r][c];
+}
+
 void flatten_3d(double *dest, double src[][H][W], int C, int H, int W) {
   for (int c = 0; c < C; ++c)
     for (int h = 0; h < H; ++h)
       for (int w = 0; w < W; ++w)
         dest[c * H * W + h * W + w] = src[c][h][w];
 }
-void flatten_4d(double *dest, double src[][C_OUT][K][K], int C_IN, int C_OUT,
-                int K) {
+void flatten_4d(double *dest, double src[][C_OUT][K][K], int C_IN, int C_OUT) {
+  int K = LENGTH_KERNEL;
   for (int x = 0; x < C_IN; ++x)
     for (int y = 0; y < C_OUT; ++y)
       for (int i = 0; i < K; ++i)
         for (int j = 0; j < K; ++j)
           dest[x * C_OUT * K * K + y * K * K + i * K + j] = src[x][y][i][j];
+}
+*/
+void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
+  int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
+
+  int size_w01 = INPUT * LAYER1 * k_sq * sizeof(double);
+  printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01,
+         sizeof(host_model->weight0_1));
+
+  /*
+  double *flat_w01 = (double *)malloc(size_w01);
+  flatten_4d(flat_w01, host_model->weight0_1, INPUT, LAYER1);
+  gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
+  gpuErrchk(cudaMemcpy(dev_model->weight0_1, flat_w01, size_w01,
+                       cudaMemcpyHostToDevice));
+
+  int size_w23 = LAYER2 * LAYER3 * k_sq * sizeof(double);
+  double *flat_w23 = (double *)malloc(size_w23);
+  flatten_4d(flat_w23, host_model->weight2_3, LAYER2, LAYER3);
+  gpuErrchk(cudaMalloc(&dev_model->weight2_3, size_w23));
+  gpuErrchk(cudaMemcpy(dev_model->weight2_3, flat_w23, size_w23,
+                       cudaMemcpyHostToDevice));
+
+  int size_w45 = LAYER4 * LAYER5 * k_sq * sizeof(double);
+  double *flat_w45 = (double *)malloc(size_w45);
+  flatten_4d(flat_w45, host_model->weight4_5, LAYER4, LAYER5);
+  gpuErrchk(cudaMalloc(&dev_model->weight4_5, size_w45));
+  gpuErrchk(cudaMemcpy(dev_model->weight4_5, flat_w45, size_w45,
+                       cudaMemcpyHostToDevice));
+
+  int size_w56 =
+      LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5 * OUTPUT * sizeof(double);
+  double *flat_w56 = (double *)malloc(size_w56);
+  flatten_2d(flat_w56, host_model->weight5_6,
+             LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5, OUTPUT);
+  gpuErrchk(cudaMalloc(&dev_model->weight5_6, size_w56));
+  gpuErrchk(cudaMemcpy(dev_model->weight5_6, flat_w56, size_w56,
+                       cudaMemcpyHostToDevice));
+  */
+  printf("LeNet5Device successfully allocated and moved to GPU.\n");
 }
 
 // end Paulie D.

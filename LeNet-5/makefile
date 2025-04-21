@@ -1,4 +1,4 @@
-CC = gcc
+CC = nvcc
 CFLAGS = -O3 -g
 
 all: main
@@ -6,8 +6,8 @@ all: main
 main: main.c lenet.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
-lenet.o: lenet.c lenet.h
-	$(CC) $(CFLAGS) -c lenet.c -lm
+lenet.o: lenet.cu lenet.h
+	$(CC) $(CFLAGS) -c lenet.cu -lm
 
 clean:
 	rm -f main *.o
