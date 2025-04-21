@@ -3,7 +3,7 @@ CFLAGS = -O3 -g
 
 all: main
 
-main: main.c lenet.o
+main: main.cu lenet.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 lenet.o: lenet.cu lenet.h

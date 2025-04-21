@@ -97,4 +97,4 @@ uint8 Predict(LeNet5 *lenet, image input, uint8 count);
 
 void Initial(LeNet5 *lenet);
 
-void PrepareLeNet5Device(double *host_model, double *device_model);
+void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *device_model);

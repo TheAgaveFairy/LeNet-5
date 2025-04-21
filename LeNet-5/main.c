@@ -246,7 +246,16 @@ int main()
 		fprintf(stderr, "Csv not found, exiting\n");
 		return 1;
 	}
+	LeNet5 *lenet = (LeNet5 *) malloc(sizeof(LeNet5));
+	if (!lenet) {
+		fprintf(stderr, "Failed to allocate LeNet5\n");
+		return 1;
+	}
+	load(lenet, LENET_FILE);
 
+	LeNet5Device *dev_lenet = NULL;
+	PrepareLeNet5Device(lenet, dev_lenet);
+	
 	int correct = 0;
 	int num_to_test = 1000;
 	for (int i = 0; i < num_to_test; i++) { // test 100 images
@@ -260,12 +269,6 @@ int main()
 			print_image(img, 28);
 		}
 
-		LeNet5 *lenet = malloc(sizeof(LeNet5));
-		if (!lenet) {
-			fprintf(stderr, "Failed to allocate LeNet5\n");
-			return 1;
-		}
-		load(lenet, LENET_FILE);
 		int p = Predict(lenet, img, 10); // lets go look at this
 		if (p != test_label && 0) { // && 1 to display failures
 			printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
@@ -273,6 +276,8 @@ int main()
 		}
 		if (DEBUG) printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
 	}
+	printf("Finished csv run\n");
+
 	//foo();
 	return 0;
 }

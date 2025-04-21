@@ -1,4 +1,5 @@
 #include "lenet.h"
+#include <cuda_device_runtime_api.h>
 #include <cuda_runtime_api.h>
 #include <math.h>
 #include <memory.h>
@@ -280,40 +281,34 @@ void flatten_4d(double *dest, double src[][C_OUT][K][K], int C_IN, int C_OUT) {
 void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
   int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
 
-  int size_w01 = INPUT * LAYER1 * k_sq * sizeof(double);
-  printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01,
+  int size_w01_temp = INPUT * LAYER1 * k_sq * sizeof(double);
+  printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01_temp,
          sizeof(host_model->weight0_1));
 
-  /*
-  double *flat_w01 = (double *)malloc(size_w01);
-  flatten_4d(flat_w01, host_model->weight0_1, INPUT, LAYER1);
-  gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
-  gpuErrchk(cudaMemcpy(dev_model->weight0_1, flat_w01, size_w01,
+  size_t size_w01 = sizeof(host_model->weight0_1);
+  //
+  //
+  gpuErrchk(cudaMalloc((void **)&dev_model->weight0_1, size_w01));
+  //
+  //
+  gpuErrchk(cudaMemcpy(dev_model->weight0_1, host_model->weight0_1, size_w01,
                        cudaMemcpyHostToDevice));
 
-  int size_w23 = LAYER2 * LAYER3 * k_sq * sizeof(double);
-  double *flat_w23 = (double *)malloc(size_w23);
-  flatten_4d(flat_w23, host_model->weight2_3, LAYER2, LAYER3);
+  int size_w23 = sizeof(host_model->weight2_3);
   gpuErrchk(cudaMalloc(&dev_model->weight2_3, size_w23));
-  gpuErrchk(cudaMemcpy(dev_model->weight2_3, flat_w23, size_w23,
+  gpuErrchk(cudaMemcpy(dev_model->weight2_3, host_model->weight2_3, size_w23,
                        cudaMemcpyHostToDevice));
 
-  int size_w45 = LAYER4 * LAYER5 * k_sq * sizeof(double);
-  double *flat_w45 = (double *)malloc(size_w45);
-  flatten_4d(flat_w45, host_model->weight4_5, LAYER4, LAYER5);
+  int size_w45 = sizeof(host_model->weight4_5);
   gpuErrchk(cudaMalloc(&dev_model->weight4_5, size_w45));
-  gpuErrchk(cudaMemcpy(dev_model->weight4_5, flat_w45, size_w45,
+  gpuErrchk(cudaMemcpy(dev_model->weight4_5, host_model->weight4_5, size_w45,
                        cudaMemcpyHostToDevice));
 
-  int size_w56 =
-      LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5 * OUTPUT * sizeof(double);
-  double *flat_w56 = (double *)malloc(size_w56);
-  flatten_2d(flat_w56, host_model->weight5_6,
-             LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5, OUTPUT);
+  int size_w56 = sizeof(host_model->weight5_6);
   gpuErrchk(cudaMalloc(&dev_model->weight5_6, size_w56));
-  gpuErrchk(cudaMemcpy(dev_model->weight5_6, flat_w56, size_w56,
+  gpuErrchk(cudaMemcpy(dev_model->weight5_6, host_model->weight5_6, size_w56,
                        cudaMemcpyHostToDevice));
-  */
+
   printf("LeNet5Device successfully allocated and moved to GPU.\n");
 }
 
