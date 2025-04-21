@@ -148,7 +148,6 @@ __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
 
   //__shared__ double shm[LENGTH_FEATURE0][LENGTH_FEATURE0]; // input will be
   // this size or smaller (32 x 32)
-
   if (row < out_height && col < out_width) {
     // size_t half_k_width = LENGTH_KERNEL / 2;
     // size_t half_k_height = LENGTH_KERNEL / 2;
@@ -286,11 +285,7 @@ void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
          sizeof(host_model->weight0_1));
 
   size_t size_w01 = sizeof(host_model->weight0_1);
-  //
-  //
-  gpuErrchk(cudaMalloc((void **)&dev_model->weight0_1, size_w01));
-  //
-  //
+  gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
   gpuErrchk(cudaMemcpy(dev_model->weight0_1, host_model->weight0_1, size_w01,
                        cudaMemcpyHostToDevice));
 

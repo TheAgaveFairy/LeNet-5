@@ -264,7 +264,7 @@ int main() {
   }
   load(lenet, LENET_FILE);
 
-  LeNet5Device *dev_lenet = NULL;
+  LeNet5Device *dev_lenet = (LeNet5Device *)malloc(sizeof(LeNet5Device));
   PrepareLeNet5Device(lenet, dev_lenet);
 
   int correct = 0;
