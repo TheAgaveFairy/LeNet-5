@@ -230,7 +230,7 @@ void foo()
 	int right = testing(lenet, test_data, test_label, COUNT_TEST); // Paulie D. "right" = "num correct guesses"
 	printf("%d/%d\n", right, COUNT_TEST);
 		printf("Time: %u clock ticks\n", (unsigned)(clock() - start));
-	save(lenet, LENET_FILE);
+	//save(lenet, LENET_FILE);
 	free(lenet);
 	free(train_data);
 	free(train_label);
@@ -243,6 +243,7 @@ int main()
 {
 	FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
 	if (!csv) {
+		fprintf(stderr, "Csv not found, exiting\n");
 		return 1;
 	}
 

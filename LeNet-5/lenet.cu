@@ -10,6 +10,21 @@
 
 #define FOREACH(i, count) for (int i = 0; i < count; ++i)
 
+// Paulie D., stole this from StackOverflow to handle errors
+#define gpuErrchk(ans)                                                         \
+  {                                                                            \
+    gpuAssert((ans), __FILE__, __LINE__);                                      \
+  }
+inline void gpuAssert(cudaError_t code, const char *file, int line,
+                      bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file,
+            line);
+    if (abort)
+      exit(code);
+  }
+}
+
 #define CONVOLUTE_VALID(input, output, weight)                                 \
   {                                                                            \
     FOREACH(o0, GETLENGTH(output))                                             \
@@ -152,6 +167,20 @@ __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
   }
 }
 
+// c = a.dot(b) matrix multiplication, naive / nonoptimal
+__global__ void naiveOneDimKernel(double *a, double *b, double *c) {
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (row < n && col < n) {
+    int sum = 0;
+    for (int k = 0; k < n; k++) {
+      sum += a[row * n + k] * b[k * n + col];
+    }
+    c[row * n + col] = sum;
+  }
+}
+
 __global__ void ActionAndBias(double *d_feature, size_t f_height,
                               size_t f_width, double bias) {
   size_t col = blockDim.x * blockIdx.x + threadIdx.x;
@@ -184,7 +213,7 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
   int h_out = in_height - LENGTH_KERNEL + 1;
   int w_out = in_width - LENGTH_KERNEL + 1;
 
-  int TPD = 16; // threads per dimension
+  int TPD = 16; // threads per dimension, not sure what this really needs to be
   dim3 blockDim(TPD, TPD);
   dim3 gridDim((w_out + blockDim.x - 1) / blockDim.x,
                (h_out + blockDim.y - 1) / blockDim.y);
@@ -209,7 +238,7 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
       cudaDeviceSynchronize();
 
       double *d_out_chan = d_out + y * h_out * w_out;
-      addArrays<<<gridDim, blockDim>>>(d_out_chan, d_temp, h_out, w_out);
+      AddArrays<<<gridDim, blockDim>>>(d_out_chan, d_temp, h_out, w_out);
     }
     double *d_out_channel = d_out + y * h_out * w_out;
     ActionAndBias<<<gridDim, blockDim>>>(d_out_channel, h_out, w_out,
