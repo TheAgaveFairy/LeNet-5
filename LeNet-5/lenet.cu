@@ -278,11 +278,14 @@ void flatten_4d(double *dest, double src[][C_OUT][K][K], int C_IN, int C_OUT) {
 }
 */
 void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
-  int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
+  // int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
 
+  /*
   int size_w01_temp = INPUT * LAYER1 * k_sq * sizeof(double);
   printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01_temp,
          sizeof(host_model->weight0_1));
+  */
+  // WEIGHTS
 
   size_t size_w01 = sizeof(host_model->weight0_1);
   gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
@@ -304,9 +307,90 @@ void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
   gpuErrchk(cudaMemcpy(dev_model->weight5_6, host_model->weight5_6, size_w56,
                        cudaMemcpyHostToDevice));
 
+  // BIASES
+  int size_b01 = sizeof(host_model->bias0_1);
+  gpuErrchk(cudaMalloc(&dev_model->bias0_1, size_b01));
+  gpuErrchk(cudaMemcpy(dev_model->bias0_1, host_model->bias0_1, size_b01,
+                       cudaMemcpyHostToDevice));
+
+  int size_b23 = sizeof(host_model->bias2_3);
+  gpuErrchk(cudaMalloc(&dev_model->bias2_3, size_b23;
+  gpuErrchk(cudaMemcpy(dev_model->bias2_3, host_model->bias2_3, size_b23,
+                       cudaMemcpyHostToDevice));
+
+  int size_b45 = sizeof(host_model->bias4_5);
+  gpuErrchk(cudaMalloc(&dev_model->bias4_5, size_b45));
+  gpuErrchk(cudaMemcpy(dev_model->bias4_5, host_model->bias4_5, size_b45,
+                       cudaMemcpyHostToDevice));
+
+  int size_b56 = sizeof(host_model->bias5_6);
+  gpuErrchk(cudaMalloc(&dev_model->bias5_6, size_b56));
+  gpuErrchk(cudaMemcpy(dev_model->bias5_6, host_model->bias5_6, size_b56,
+                       cudaMemcpyHostToDevice));
+  
   printf("LeNet5Device successfully allocated and moved to GPU.\n");
 }
 
+void FreeLeNet5Device(LeNet5Device *model) {
+  gpuErrchk(cudaFree(model->weight0_1));
+  gpuErrchk(cudaFree(model->weight2_3));
+  gpuErrchk(cudaFree(model->weight4_5));
+  gpuErrchk(cudaFree(model->weight5_6));
+
+  gpuErrchk(cudaFree(model->bias0_1));
+  gpuErrchk(cudaFree(model->bias2_3));
+  gpuErrchk(cudaFree(model->bias4_5));
+  gpuErrchk(cudaFree(model->bias5_6));
+}
+
+void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat) {
+  size_t size_input = sizeof(host_feat->input);
+  gpuErrchk(cudaMalloc(&dev_feat->input, size_input));
+  gpuErrchk(cudaMemcpy(dev_feat->input, host_feat->input, size_input,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_layer1 = sizeof(host_feat->layer1);
+  gpuErrchk(cudaMalloc(&dev_feat->layer1, size_layer1));
+  gpuErrchk(cudaMemcpy(dev_feat->layer1, host_feat->layer1, size_layer1,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_layer2 = sizeof(host_feat->layer2);
+  gpuErrchk(cudaMalloc(&dev_feat->layer2, size_layer2));
+  gpuErrchk(cudaMemcpy(dev_feat->layer2, host_feat->layer2, size_layer2,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_layer3 = sizeof(host_feat->layer3);
+  gpuErrchk(cudaMalloc(&dev_feat->layer3, size_layer3));
+  gpuErrchk(cudaMemcpy(dev_feat->layer3, host_feat->layer3, size_layer3,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_layer4 = sizeof(host_feat->layer4);
+  gpuErrchk(cudaMalloc(&dev_feat->layer4, size_layer4));
+  gpuErrchk(cudaMemcpy(dev_feat->layer4, host_feat->layer4, size_layer4,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_layer5 = sizeof(host_feat->layer5);
+  gpuErrchk(cudaMalloc(&dev_feat->layer5, size_layer5));
+  gpuErrchk(cudaMemcpy(dev_feat->layer5, host_feat->layer5, size_layer5,
+                       cudaMemcpyHostToDevice));
+
+  size_t size_output = sizeof(host_feat->output);
+  gpuErrchk(cudaMalloc(&dev_feat->output, size_output));
+  gpuErrchk(cudaMemcpy(dev_feat->output, host_feat->output, size_output,
+                       cudaMemcpyHostToDevice));
+
+  printf("FeatureDevice successfully allocated and moved to GPU.\n");
+}
+
+void FreeFeatureDevice(FeatureDevice *feat) {
+  gpuErrchk(cudaFree(feat->input));
+  gpuErrchk(cudaFree(feat->layer1));
+  gpuErrchk(cudaFree(feat->layer2));
+  gpuErrchk(cudaFree(feat->layer3));
+  gpuErrchk(cudaFree(feat->layer4));
+  gpuErrchk(cudaFree(feat->layer5));
+  gpuErrchk(cudaFree(feat->output));
+}
 // end Paulie D.
 
 double relu(double x) { return x * (x > 0); }
