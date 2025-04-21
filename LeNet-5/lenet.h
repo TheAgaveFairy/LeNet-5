@@ -42,6 +42,27 @@ void Initial(LeNet5 *lenet);
 typedef unsigned char uint8;
 typedef uint8 image[28][28];
 
+typedef struct LeNet5Device {
+	double *weight0_1;
+	double *weight2_3;
+	double *weight4_5;
+	double *weight5_6;
+
+	double *bias0_1;
+	double *bias2_3;
+	double *bias4_5;
+	double *bias5_6;
+} LeNet5Device;
+
+typedef struct FeatureDevice {
+	double *input;
+	double *layer1;
+	double *layer2;
+	double *layer3;
+	double *layer4;
+	double *layer5;
+	double *output;
+} FeatureDevice;
 
 typedef struct LeNet5
 {
