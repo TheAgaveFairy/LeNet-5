@@ -18,15 +18,6 @@
   {                                                                            \
     gpuAssert((ans), __FILE__, __LINE__);                                      \
   }
-inline void gpuAssert(cudaError_t code, const char *file, int line,
-                      bool abort = true) {
-  if (code != cudaSuccess) {
-    fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file,
-            line);
-    if (abort)
-      exit(code);
-  }
-}
 
 #define CONVOLUTE_VALID(input, output, weight)                                 \
   {                                                                            \
@@ -135,6 +126,15 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
   }
 
 // Paulie D. CUDA functions to replace FORWARD macros above
+inline void gpuAssert(cudaError_t code, const char *file, int line,
+                      bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file,
+            line);
+    if (abort)
+      exit(code);
+  }
+}
 // no padding "convolution" aka cross correlation
 __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
                                double *d_out, size_t in_height,
@@ -379,7 +379,7 @@ void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
                        cudaMemcpyHostToDevice));
 
   int size_b23 = sizeof(host_model->bias2_3);
-  gpuErrchk(cudaMalloc(&dev_model->bias2_3, size_b23;
+  gpuErrchk(cudaMalloc(&dev_model->bias2_3, size_b23));
   gpuErrchk(cudaMemcpy(dev_model->bias2_3, host_model->bias2_3, size_b23,
                        cudaMemcpyHostToDevice));
 
@@ -392,7 +392,7 @@ void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
   gpuErrchk(cudaMalloc(&dev_model->bias5_6, size_b56));
   gpuErrchk(cudaMemcpy(dev_model->bias5_6, host_model->bias5_6, size_b56,
                        cudaMemcpyHostToDevice));
-  
+
   printf("LeNet5Device successfully allocated and moved to GPU.\n");
 }
 
