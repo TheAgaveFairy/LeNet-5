@@ -201,6 +201,49 @@ __global__ void ActionAndBias(double *d_feature, size_t f_height,
     d_feature[temp_idx] = temp * (temp > 0);
   }
 }
+__global__ void SoftmaxWithoutLoss(double *input, double *output, int count) {
+  __shared__ double shared_max[32];
+  __shared__ double shared_sum[32];
+
+  if (threadIdx.x < count) {
+    shared_max[threadIdx.x] = input[threadIdx.x];
+  } else {
+    shared_max[threadIdx.x] = -INFINITY;
+  }
+  __syncthreads();
+
+  // reduce
+  for (int stride = 16; stride > 0; stride >>= 1) {
+    if (threadIdx.x < stride) {
+      shared_max[threadIdx.x] =
+          fmax(shared_max[threadIdx.x], shared_max[threadIdx.x + stride]);
+    }
+    __syncthreads();
+  }
+
+  double max_val = shared_max[0]; // numerical stability
+
+  double thread_exp = 0.0;
+  if (threadIdx.x < count) {
+    thread_exp = exp(input[threadIdx.x] - max_val);
+    output[threadIdx.x] = thread_exp; // Store temporarily
+  }
+
+  shared_sum[threadIdx.x] = (threadIdx.x < count) ? thread_exp : 0.0;
+  __syncthreads();
+
+  for (int stride = 16; stride > 0; stride >>= 1) {
+    if (threadIdx.x < stride) {
+      shared_sum[threadIdx.x] += shared_sum[threadIdx.x + stride];
+    }
+    __syncthreads();
+  }
+
+  double sum_exp = shared_sum[0];
+  if (threadIdx.x < count) {
+    output[threadIdx.x] = thread_exp / sum_exp;
+  }
+}
 
 // adds device_b to device_a
 __global__ void AddArrays(double *d_a, double *d_b, int height, int width) {
@@ -213,6 +256,28 @@ __global__ void AddArrays(double *d_a, double *d_b, int height, int width) {
   }
 }
 
+__global__ void Maxpool2D(double *input, double *output, int in_h, int in_w) {
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+  int out_h = in_h / 2;
+  int out_w = in_w / 2;
+
+  if (row < out_h && col < out_w) {
+    int t_r = row * 2;
+    int t_c = col * 2;
+
+    int t_idx = t_r * in_w + t_c;
+
+    // A B
+    // C D
+    double temp_max = fmax(input[t_idx], input[t_idx + 1]); // A and B
+    temp_max = fmax(temp_max, input[t_idx + in_w]);         // temp and C
+    temp_max = fmax(temp_max, input[t_idx + in_w + 1]);     // temp and D
+
+    output[row * out_w + col] = temp_max;
+  }
+}
 // this assumes everything is already on device...
 void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
                       double *d_bias, int in_channels, int out_channels,
