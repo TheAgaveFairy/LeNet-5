@@ -95,6 +95,10 @@ void Train(LeNet5 *lenet, image input, uint8 label);
 
 uint8 Predict(LeNet5 *lenet, image input, uint8 count);
 
+uint8 CudaPredict(LeNet5 *host_model, LeNet5Device *dev_model, FeatureDevice *dev_feat, image input, uint8 count);
+
 void Initial(LeNet5 *lenet);
 
 void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *device_model);
+
+void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat);

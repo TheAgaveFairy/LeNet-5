@@ -269,6 +269,10 @@ int main() {
   LeNet5Device *dev_lenet = (LeNet5Device *)malloc(sizeof(LeNet5Device));
   PrepareLeNet5Device(lenet, dev_lenet);
 
+  Feature host_feat = {0};
+  FeatureDevice *dev_feat = (FeatureDevice *)malloc(sizeof(FeatureDevice));
+  PrepareFeatureDevice(&host_feat, dev_feat);
+
   return EXIT_SUCCESS;
 
   int correct = 0;
@@ -284,8 +288,10 @@ int main() {
       print_image(img, 28);
     }
 
-    int p = Predict(lenet, img, 10); // lets go look at this
-    if (p != test_label && 0) {      // && 1 to display failures
+    // int p = Predict(lenet, img, 10); // lets go look at this
+    int p = CudaPredict(lenet, dev_lenet, dev_feat, img, OUTPUT);
+
+    if (p != test_label && 0) { // && 1 to display failures
       printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
       print_image(img, 28);
     }
@@ -294,5 +300,9 @@ int main() {
   }
   printf("Thanks!\n");
   // foo();
+  //
+  //
+  //
+  // free(ALL THE THINGS); JUST KIDDING THATS FOR LOSERS #thanksOS
   return 0;
 }

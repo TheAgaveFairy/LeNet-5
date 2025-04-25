@@ -315,34 +315,10 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
       AddArrays<<<gridDim, blockDim>>>(d_out_chan, d_temp, h_out, w_out);
     }
     double *d_out_channel = d_out + y * h_out * w_out;
-    ActionAndBias<<<gridDim, blockDim>>>(d_out_channel, h_out, w_out,
-                                         d_bias[y]);
+    ActionAndBias<<<gridDim, blockDim>>>(d_out_channel, h_out, w_out, d_bias);
   }
 }
 
-// void ConvolutePreparation(input, output, weight, bias) { return; }
-/*
-void flatten_2d(double *dest, double src[][], int rows, int cols) {
-  for (int r = 0; r < rows; r++)
-    for (int c = 0; c < rows; c++)
-      dest[r * rows + c] = src[r][c];
-}
-
-void flatten_3d(double *dest, double src[][H][W], int C, int H, int W) {
-  for (int c = 0; c < C; ++c)
-    for (int h = 0; h < H; ++h)
-      for (int w = 0; w < W; ++w)
-        dest[c * H * W + h * W + w] = src[c][h][w];
-}
-void flatten_4d(double *dest, double src[][C_OUT][K][K], int C_IN, int C_OUT) {
-  int K = LENGTH_KERNEL;
-  for (int x = 0; x < C_IN; ++x)
-    for (int y = 0; y < C_OUT; ++y)
-      for (int i = 0; i < K; ++i)
-        for (int j = 0; j < K; ++j)
-          dest[x * C_OUT * K * K + y * K * K + i * K + j] = src[x][y][i][j];
-}
-*/
 void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
   // int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
 
@@ -488,7 +464,7 @@ void FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m,
   // a.shape=(120, 1, 1) b.shape=(120 * 1 * 1, 10) c.shape=(10)
   naiveOneDimKernel<<<gridDim, blockDim>>>(dev_a, dev_b, dev_c, m, l, n);
 }
-static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
+static void CUDAForward(LeNet5 *host_model, Feature *host_feat,
                         LeNet5Device *dev_model, FeatureDevice *dev_feat) {
   // maxpool and onedim need wrappers
   ConvoluteForward(dev_feat->input, dev_feat->layer1, dev_model->weight0_1,
@@ -660,6 +636,14 @@ uint8 Predict(LeNet5 *lenet, image input, uint8 count) {
   load_input(&features, input);
   forward(lenet, &features, relu);
   return get_result(&features, count);
+}
+
+uint8 CudaPredict(LeNet5 *host_model, LeNet5Device *dev_model,
+                  FeatureDevice *dev_feat, image input, uint8 count) {
+  Feature host_feat = {0};
+  load_input(&host_feat, input);
+  CUDAForward(host_model, &host_feat, dev_model, dev_feat);
+  return get_result(&host_feat, count);
 }
 
 void Initial(LeNet5 *lenet) {
