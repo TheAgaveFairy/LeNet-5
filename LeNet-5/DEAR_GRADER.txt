@@ -1,0 +1,7 @@
+Compile with make
+
+For 1000 images:
+GPU : 244732ms 97% accurate
+CPU : 829ms 97.7% accurate
+
+Nvidia profiler suggests this is due to sync overheads - small tasks. Would need to rewrite to batch larger jobs on GPU or launch many kernels at once, move MNIST to GPU, etc. Utilization is low. 
