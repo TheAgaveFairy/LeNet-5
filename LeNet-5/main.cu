@@ -1,4 +1,5 @@
 ﻿#include "lenet.h"
+#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -256,6 +257,7 @@ int main() {
     fprintf(stderr, "Csv not found, exiting\n");
     return 1;
   }
+  printf("LENGTH FEATURE 5 %d\n", LENGTH_FEATURE5);
 
   LeNet5 *lenet = (LeNet5 *)malloc(sizeof(LeNet5));
   if (!lenet) {
@@ -266,6 +268,8 @@ int main() {
 
   LeNet5Device *dev_lenet = (LeNet5Device *)malloc(sizeof(LeNet5Device));
   PrepareLeNet5Device(lenet, dev_lenet);
+
+  return EXIT_SUCCESS;
 
   int correct = 0;
   int num_to_test = 1000;

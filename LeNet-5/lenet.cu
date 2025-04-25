@@ -477,7 +477,17 @@ void Maxpooler(double *dev_feat_in, double *dev_feat_out, int in_sz,
     Maxpool2D<<<gridDim, blockDim>>>(in_start, out_start, in_sz, in_sz);
   }
 }
-
+void FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m,
+                         int l, int n) {
+  int TPD = 16; // threads per dimension, not sure what this really needs to be
+  dim3 blockDim(TPD, TPD);
+  dim3 gridDim((9001 / 2 + blockDim.x - 1) / blockDim.x,
+               (9001 / 2 + blockDim.y - 1) / blockDim.y);
+  // a is feat->layer5, b is lenet->weight5_6, c is features->output
+  // a shape (120,
+  // naiveOneDimKernel<<<gridDim, blockDim>>>(double *a, double *b, double *c,
+  // int m, int l, int n);
+}
 static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
                         LeNet5Device *dev_model, FeatureDevice *dev_feat) {
   // maxpool and onedim need wrappers
@@ -492,11 +502,14 @@ static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
   ConvoluteForward(dev_feat->layer4, dev_feat->layer5, dev_model->weight4_5,
                    dev_model->bias4_5, LAYER4, LAYER5, LENGTH_FEATURE4,
                    LENGTH_FEATURE4);
-  naiveOneDimKernel(dev_feat->layer5, dev_model->weight5_6, dev_feat->output,
-                    LAYER5, LAYER5, OUTPUT);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
+  // FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m, int
+  // l, int n); naiveOneDimKernel(dev_feat->layer5, dev_model->weight5_6,
+  // dev_feat->output,
+  //                   LAYER5, LAYER5, OUTPUT);
+  /* ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
                 double bias);
   SoftmaxWithoutLoss(double *input, double *output, int count);
+  */
 }
 
 static void forward(LeNet5 *lenet, Feature *features,
