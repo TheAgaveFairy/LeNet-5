@@ -462,32 +462,36 @@ double relu(double x) { return x * (x > 0); }
 
 double relugrad(double y) { return y > 0; }
 
+// not gonna split w and h, just in_sz.
+void Maxpooler(double *dev_feat_in, double *dev_feat_out, int in_sz,
+               int channels) {
+  int TPD = 16; // threads per dimension, not sure what this really needs to be
+  dim3 blockDim(TPD, TPD);
+  dim3 gridDim((in_sz / 2 + blockDim.x - 1) / blockDim.x,
+               (in_sz / 2 + blockDim.y - 1) / blockDim.y);
+
+  int out_sz = in_sz / 2;
+  for (int c = 0; c < channels; ++c) {
+    double *in_start = dev_feat_in + c * in_sz * in_sz;
+    double *out_start = dev_feat_out + c * out_sz * out_sz;
+    Maxpool2D<<<gridDim, blockDim>>>(in_start, out_start, in_sz, in_sz);
+  }
+}
+
 static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
                         LeNet5Device *dev_model, FeatureDevice *dev_feat) {
   // maxpool and onedim need wrappers
   ConvoluteForward(dev_feat->input, dev_feat->layer1, dev_model->weight0_1,
                    dev_model->bias0_1, INPUT, LAYER1, LENGTH_FEATURE0,
                    LENGTH_FEATURE0);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
-  Maxpool2D(dev_feat->layer1, dev_feat->layer2, LENGTH_FEATURE1,
-            LENGTH_FEATURE1);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
+  Maxpooler(dev_feat->layer1, dev_feat->layer2, LENGTH_FEATURE1, LAYER1);
   ConvoluteForward(dev_feat->layer2, dev_feat->layer3, dev_model->weight2_3,
                    dev_model->bias2_3, LAYER2, LAYER3, LENGTH_FEATURE2,
                    LENGTH_FEATURE2);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
-  Maxpool2D(dev_feat->layer3, dev_feat->layer4, LENGTH_FEATURE3,
-            LENGTH_FEATURE3);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
+  Maxpooler(dev_feat->layer3, dev_feat->layer4, LENGTH_FEATURE3, LAYER3);
   ConvoluteForward(dev_feat->layer4, dev_feat->layer5, dev_model->weight4_5,
                    dev_model->bias4_5, LAYER4, LAYER5, LENGTH_FEATURE4,
                    LENGTH_FEATURE4);
-  ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
   naiveOneDimKernel(dev_feat->layer5, dev_model->weight5_6, dev_feat->output,
                     LAYER5, LAYER5, OUTPUT);
   ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
