@@ -353,23 +353,23 @@ static void CUDAForward(Feature *host_feat, LeNet5Device *dev_model,
   ConvoluteForward(dev_feat->input, dev_feat->layer1, dev_model->weight0_1,
                    dev_model->bias0_1, INPUT, LAYER1, LENGTH_FEATURE0,
                    LENGTH_FEATURE0);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 
   Maxpooler(dev_feat->layer1, dev_feat->layer2, LENGTH_FEATURE1, LAYER1);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 
   ConvoluteForward(dev_feat->layer2, dev_feat->layer3, dev_model->weight2_3,
                    dev_model->bias2_3, LAYER2, LAYER3, LENGTH_FEATURE2,
                    LENGTH_FEATURE2);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 
   Maxpooler(dev_feat->layer3, dev_feat->layer4, LENGTH_FEATURE3, LAYER3);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 
   ConvoluteForward(dev_feat->layer4, dev_feat->layer5, dev_model->weight4_5,
                    dev_model->bias4_5, LAYER4, LAYER5, LENGTH_FEATURE4,
                    LENGTH_FEATURE4);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 
   FullyConnectedFused(dev_feat->layer5, dev_model->weight5_6, dev_feat->output,
                       LENGTH_FEATURE5, LAYER5, OUTPUT);
@@ -398,10 +398,9 @@ static void CUDAForward(Feature *host_feat, LeNet5Device *dev_model,
   /// output is 10 but just allocate a full warp size of 32 // wait we dont need
   /// that
   // SoftmaxWithoutLoss<<<1,32>>>(dev_feat->output, double *output, OUTPUT);
-  // gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output, OUTPUT *
-  // sizeof(double),
-  //                     cudaMemcpyDeviceToHost));
-  UnloadFeatureFromDevice(host_feat, dev_feat);
+  gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output,
+                       sizeof(host_feat->output), cudaMemcpyDeviceToHost));
+  // UnloadFeatureFromDevice(host_feat, dev_feat);
 
   int DEBUG = 0;
   if (DEBUG) {
@@ -650,7 +649,7 @@ void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
   gpuErrchk(cudaMemcpy(dev_model->bias5_6, host_model->bias5_6, size_b56,
                        cudaMemcpyHostToDevice));
 
-  printf("LeNet5Device successfully allocated and moved to GPU.\n");
+  // printf("LeNet5Device successfully allocated and moved to GPU.\n");
 }
 
 void FreeLeNet5Device(LeNet5Device *model) {
@@ -719,7 +718,7 @@ void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat) {
   size_t size_output = sizeof(host_feat->output);
   gpuErrchk(cudaMalloc(&dev_feat->output, size_output));
 
-  printf("FeatureDevice layers successfully allocated on GPU.\n");
+  // printf("FeatureDevice layers successfully allocated on GPU.\n");
 }
 
 void FreeFeatureDevice(FeatureDevice *feat) {

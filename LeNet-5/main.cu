@@ -258,27 +258,171 @@ typedef struct TestResult {
   int correct;
   float ms;
 } TestResult;
+void PrintTestResult(TestResult *tr) {
+  double accuracy = (tr->correct * 1.0) / (tr->num_tested * 1.0);
+  printf("Results: %d/%d = %.4lf percent acc.\n%.4f ms to run.\n", tr->correct,
+         tr->num_tested, accuracy, tr->ms);
+}
+TestResult *TestCUDA(int num_to_test) {
+  TestResult *result = (TestResult *)malloc(sizeof(TestResult));
 
-TestResult TestCUDA(int num_to_test) {
   cudaEvent_t start, end;
   cudaEventCreate(&start);
   cudaEventCreate(&end);
   float ms_run;
 
+  FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
+  if (!csv) {
+    fprintf(stderr, "Csv not found, exiting\n");
+    return NULL;
+  }
+
+  LeNet5 *lenet = (LeNet5 *)malloc(sizeof(LeNet5));
+  if (!lenet) {
+    fprintf(stderr, "Failed to allocate LeNet5. Exiting.\n");
+    return NULL;
+  }
+  if (load(lenet, LENET_FILE)) {
+    fprintf(stderr, "Failure loading lenet. Exiting.\n");
+    return NULL;
+  }
+
+  // structure on CPU that holds pointers to where we allocate each layer on the
+  // GPU
+  LeNet5Device *dev_lenet = (LeNet5Device *)malloc(sizeof(LeNet5Device));
+  PrepareLeNet5Device(lenet, dev_lenet);
+
+  Feature *host_feat = (Feature *)malloc(sizeof(Feature));
+  // feature is a "scratch pad" for intermediate results, really only used for
+  // passing the sizes of each feature to cudaMalloc
+  FeatureDevice *dev_feat = (FeatureDevice *)malloc(sizeof(FeatureDevice));
+  // we will want a static buffer on GPU to read and write from
+  PrepareFeatureDevice(host_feat, dev_feat);
+
+  if (!dev_lenet || !dev_feat || !host_feat) {
+    fprintf(stderr, "Allocation failures, exiting.\n");
+    return NULL;
+  }
+
   cudaEventRecord(start);
+  int correct = 0;
+  for (int i = 0; i < num_to_test; i++) { // test some number of images
+    showProgress(i, num_to_test);
+    if (DEBUG)
+      printf("\nIMAGE NUMBER %d\n\ n", i);
+    image img;
+    int test_label = read_from_csv(csv, 28, img); // returns label
+    if (test_label < 0) {
+      return NULL; // failure to read, fix this TODO
+    }
+    if (DEBUG) {
+      // printf("Recieved image: %d.\n", test_label);
+      print_image(img, 28);
+    }
+
+    // int p = Predict(lenet, img, 10); // CPU version
+    // if you dont want CPU comparison of results, pass NULL instead of 'lenet'
+    int p = CudaPredict(dev_lenet, host_feat, dev_feat, img, OUTPUT, NULL);
+
+    correct += p == test_label;
+
+    int SHOW_FAILURES = 0;
+    if (p != test_label && SHOW_FAILURES) { // to display failures
+      printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+      print_image(img, 28);
+    }
+    if (DEBUG)
+      printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+  }
+
+  // printf("Correct: %d, tested: %d\n", correct, num_to_test);
 
   cudaEventRecord(end);
   cudaEventSynchronize(end);
   cudaEventElapsedTime(&ms_run, start, end);
 
-  TestResult answer = {0};
-  answer.num_tested = num_to_test;
-  answer.correct = correct;
-  answer.ms = ms_run;
-  return answer;
-}
+  FreeFeatureDevice(dev_feat);
+  FreeLeNet5Device(dev_lenet);
+  // if you're a loser, take work away from the OS
+  free(lenet);
+  free(dev_lenet);
+  free(host_feat);
+  free(dev_feat);
 
+  result->num_tested = num_to_test;
+  result->correct = correct;
+  result->ms = ms_run;
+  return result;
+}
+TestResult *TestCPU(int num_to_test) {
+  TestResult *result = (TestResult *)malloc(sizeof(TestResult));
+
+  cudaEvent_t start, end;
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+  float ms_run;
+
+  FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
+  if (!csv) {
+    fprintf(stderr, "Csv not found, exiting\n");
+    return NULL;
+  }
+
+  LeNet5 *lenet = (LeNet5 *)malloc(sizeof(LeNet5));
+  if (!lenet) {
+    fprintf(stderr, "Failed to allocate LeNet5. Exiting.\n");
+    return NULL;
+  }
+  if (load(lenet, LENET_FILE)) {
+    fprintf(stderr, "Failure loading lenet. Exiting.\n");
+    return NULL;
+  }
+
+  cudaEventRecord(start);
+  int correct = 0;
+  for (int i = 0; i < num_to_test; i++) { // test some number of images
+    showProgress(i, num_to_test);
+    if (DEBUG)
+      printf("\nIMAGE NUMBER %d\n\ n", i);
+    image img;
+    int test_label = read_from_csv(csv, 28, img); // returns label
+    if (test_label < 0) {
+      return NULL; // failure to read, fix this TODO
+    }
+    if (DEBUG) {
+      // printf("Recieved image: %d.\n", test_label);
+      print_image(img, 28);
+    }
+
+    int p = Predict(lenet, img, 10); // CPU version
+
+    correct += p == test_label;
+
+    int SHOW_FAILURES = 0;
+    if (p != test_label && SHOW_FAILURES) { // to display failures
+      printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+      print_image(img, 28);
+    }
+    if (DEBUG)
+      printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
+  }
+
+  // printf("Correct: %d, tested: %d\n", correct, num_to_test);
+
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+  cudaEventElapsedTime(&ms_run, start, end);
+
+  // if you're a loser, take work away from the OS
+  free(lenet);
+
+  result->num_tested = num_to_test;
+  result->correct = correct;
+  result->ms = ms_run;
+  return result;
+}
 int main() {
+  /*
   FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
   if (!csv) {
     fprintf(stderr, "Csv not found, exiting\n");
@@ -346,9 +490,22 @@ int main() {
 
   FreeFeatureDevice(dev_feat);
   FreeLeNet5Device(dev_lenet);
+  */
 
-  printf("Thanks!\n");
+  int num_to_test = 1000;
+  printf("Testing %d images.\n", num_to_test);
+
+  printf("Testing CUDA:\n");
+  TestResult *cuda_results = TestCUDA(num_to_test);
+  printf("CUDA results:\n");
+  PrintTestResult(cuda_results);
+
+  printf("Testing CPU:\n");
+  TestResult *cpu_results = TestCPU(num_to_test);
+  printf("CPU results:\n");
+  PrintTestResult(cpu_results);
   // foo();
   // free(ALL THE THINGS); JUST KIDDING THATS FOR LOSERS #thanksOS
+  printf("Thanks!\n");
   return 0;
 }
