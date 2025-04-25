@@ -1,6 +1,7 @@
 #include "lenet.h"
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime_api.h>
+#include <driver_types.h>
 #include <math.h>
 #include <memory.h>
 #include <stdio.h>
@@ -180,16 +181,16 @@ __global__ void naiveOneDimKernel(double *a, double *b, double *c, int m, int l,
   if (row < m && col < n) {
     double sum = 0;
     for (int k = 0; k < l; k++) {
-      sum += a[row * n + k] * b[k * n + col];
+      sum += a[row * l + k] * b[k * n + col];
     }
-    c[row * m + col] = sum;
+    c[row * n + col] = sum;
   }
 }
 
 // performs addition of bias (1 per channel) and ReLU (currently hard coded
 // "action")
 __global__ void ActionAndBias(double *d_feature, size_t f_height,
-                              size_t f_width, double bias) {
+                              size_t f_width, double *bias) {
   size_t col = blockDim.x * blockIdx.x + threadIdx.x;
   size_t row = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -197,7 +198,7 @@ __global__ void ActionAndBias(double *d_feature, size_t f_height,
 
   if (row < f_height && col < f_width) {
     size_t temp_idx = row * f_width + col;
-    double temp = d_feature[temp_idx] + bias;
+    double temp = d_feature[temp_idx] + bias[temp_idx];
     d_feature[temp_idx] = temp * (temp > 0);
   }
 }
@@ -481,12 +482,11 @@ void FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m,
                          int l, int n) {
   int TPD = 16; // threads per dimension, not sure what this really needs to be
   dim3 blockDim(TPD, TPD);
-  dim3 gridDim((9001 / 2 + blockDim.x - 1) / blockDim.x,
-               (9001 / 2 + blockDim.y - 1) / blockDim.y);
+  dim3 gridDim((n + blockDim.x - 1) / blockDim.x,
+               (m + blockDim.y - 1) / blockDim.y);
   // a is feat->layer5, b is lenet->weight5_6, c is features->output
-  // a shape (120,
-  // naiveOneDimKernel<<<gridDim, blockDim>>>(double *a, double *b, double *c,
-  // int m, int l, int n);
+  // a.shape=(120, 1, 1) b.shape=(120 * 1 * 1, 10) c.shape=(10)
+  naiveOneDimKernel<<<gridDim, blockDim>>>(dev_a, dev_b, dev_c, m, l, n);
 }
 static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
                         LeNet5Device *dev_model, FeatureDevice *dev_feat) {
@@ -502,14 +502,21 @@ static void CUDAforward(LeNet5 *host_model, Feature *host_feat,
   ConvoluteForward(dev_feat->layer4, dev_feat->layer5, dev_model->weight4_5,
                    dev_model->bias4_5, LAYER4, LAYER5, LENGTH_FEATURE4,
                    LENGTH_FEATURE4);
-  // FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m, int
-  // l, int n); naiveOneDimKernel(dev_feat->layer5, dev_model->weight5_6,
-  // dev_feat->output,
-  //                   LAYER5, LAYER5, OUTPUT);
-  /* ActionAndBias(double *d_feature, size_t f_height, size_t f_width,
-                double bias);
-  SoftmaxWithoutLoss(double *input, double *output, int count);
-  */
+  FullyConnectedFused(dev_feat->layer5, dev_model->weight5_6, dev_feat->output,
+                      LENGTH_FEATURE5, LAYER5, OUTPUT);
+
+  int TBD = 16; // threads per dim per block
+  dim3 dimBlock(TBD, TBD);
+  dim3 dimGrid((OUTPUT + blockDim.x - 1) / blockDim.x,
+               (1 + blockDim.y - 1) / blockDim.y);
+  ActionAndBias<<<dimGrid, dimBlock>>>(dev_feat->output, OUTPUT,
+                                       LENGTH_FEATURE5, dev_model->bias5_6);
+
+  /// output is 10 but just allocate a full warp size of 32 // wait we dont need
+  /// that
+  // SoftmaxWithoutLoss<<<1,32>>>(dev_feat->output, double *output, OUTPUT);
+  gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output, OUTPUT,
+                       cudaMemcpyDeviceToHost));
 }
 
 static void forward(LeNet5 *lenet, Feature *features,
