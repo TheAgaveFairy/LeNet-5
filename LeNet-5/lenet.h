@@ -95,10 +95,18 @@ void Train(LeNet5 *lenet, image input, uint8 label);
 
 uint8 Predict(LeNet5 *lenet, image input, uint8 count);
 
-uint8 CudaPredict(LeNet5 *host_model, LeNet5Device *dev_model, FeatureDevice *dev_feat, image input, uint8 count);
+uint8 CudaPredict(LeNet5Device *dev_model, Feature *host_feat, FeatureDevice *dev_feat, image input, uint8 count, LeNet5 *host_model);
 
 void Initial(LeNet5 *lenet);
 
 void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *device_model);
 
 void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat);
+void UnloadFeatureFromDevice(Feature *host_feat, FeatureDevice *dev_feat);
+
+void FreeLeNet5Device(LeNet5Device *model);
+
+void FreeFeatureDevice(FeatureDevice *feat);
+
+int CompareFeatures(Feature *host, Feature *dev);
+void CopyInput(Feature *host_feat, FeatureDevice *dev_feat);

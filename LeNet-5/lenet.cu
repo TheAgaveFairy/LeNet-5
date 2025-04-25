@@ -147,12 +147,7 @@ __global__ void ConvoluteValid(const double *d_in, const double *d_weight,
   size_t out_height = in_height - LENGTH_KERNEL + 1;
   size_t out_width = in_width - LENGTH_KERNEL + 1;
 
-  //__shared__ double shm[LENGTH_FEATURE0][LENGTH_FEATURE0]; // input will be
-  // this size or smaller (32 x 32)
   if (row < out_height && col < out_width) {
-    // size_t half_k_width = LENGTH_KERNEL / 2;
-    // size_t half_k_height = LENGTH_KERNEL / 2;
-
     double result = 0.0;
 
     for (int i = 0; i < LENGTH_KERNEL; ++i) {
@@ -319,126 +314,6 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
   }
 }
 
-void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
-  // int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
-
-  /*
-  int size_w01_temp = INPUT * LAYER1 * k_sq * sizeof(double);
-  printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01_temp,
-         sizeof(host_model->weight0_1));
-  */
-  // WEIGHTS
-
-  size_t size_w01 = sizeof(host_model->weight0_1);
-  gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
-  gpuErrchk(cudaMemcpy(dev_model->weight0_1, host_model->weight0_1, size_w01,
-                       cudaMemcpyHostToDevice));
-
-  int size_w23 = sizeof(host_model->weight2_3);
-  gpuErrchk(cudaMalloc(&dev_model->weight2_3, size_w23));
-  gpuErrchk(cudaMemcpy(dev_model->weight2_3, host_model->weight2_3, size_w23,
-                       cudaMemcpyHostToDevice));
-
-  int size_w45 = sizeof(host_model->weight4_5);
-  gpuErrchk(cudaMalloc(&dev_model->weight4_5, size_w45));
-  gpuErrchk(cudaMemcpy(dev_model->weight4_5, host_model->weight4_5, size_w45,
-                       cudaMemcpyHostToDevice));
-
-  int size_w56 = sizeof(host_model->weight5_6);
-  gpuErrchk(cudaMalloc(&dev_model->weight5_6, size_w56));
-  gpuErrchk(cudaMemcpy(dev_model->weight5_6, host_model->weight5_6, size_w56,
-                       cudaMemcpyHostToDevice));
-
-  // BIASES
-  int size_b01 = sizeof(host_model->bias0_1);
-  gpuErrchk(cudaMalloc(&dev_model->bias0_1, size_b01));
-  gpuErrchk(cudaMemcpy(dev_model->bias0_1, host_model->bias0_1, size_b01,
-                       cudaMemcpyHostToDevice));
-
-  int size_b23 = sizeof(host_model->bias2_3);
-  gpuErrchk(cudaMalloc(&dev_model->bias2_3, size_b23));
-  gpuErrchk(cudaMemcpy(dev_model->bias2_3, host_model->bias2_3, size_b23,
-                       cudaMemcpyHostToDevice));
-
-  int size_b45 = sizeof(host_model->bias4_5);
-  gpuErrchk(cudaMalloc(&dev_model->bias4_5, size_b45));
-  gpuErrchk(cudaMemcpy(dev_model->bias4_5, host_model->bias4_5, size_b45,
-                       cudaMemcpyHostToDevice));
-
-  int size_b56 = sizeof(host_model->bias5_6);
-  gpuErrchk(cudaMalloc(&dev_model->bias5_6, size_b56));
-  gpuErrchk(cudaMemcpy(dev_model->bias5_6, host_model->bias5_6, size_b56,
-                       cudaMemcpyHostToDevice));
-
-  printf("LeNet5Device successfully allocated and moved to GPU.\n");
-}
-
-void FreeLeNet5Device(LeNet5Device *model) {
-  gpuErrchk(cudaFree(model->weight0_1));
-  gpuErrchk(cudaFree(model->weight2_3));
-  gpuErrchk(cudaFree(model->weight4_5));
-  gpuErrchk(cudaFree(model->weight5_6));
-
-  gpuErrchk(cudaFree(model->bias0_1));
-  gpuErrchk(cudaFree(model->bias2_3));
-  gpuErrchk(cudaFree(model->bias4_5));
-  gpuErrchk(cudaFree(model->bias5_6));
-}
-
-void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat) {
-  size_t size_input = sizeof(host_feat->input);
-  gpuErrchk(cudaMalloc(&dev_feat->input, size_input));
-  gpuErrchk(cudaMemcpy(dev_feat->input, host_feat->input, size_input,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_layer1 = sizeof(host_feat->layer1);
-  gpuErrchk(cudaMalloc(&dev_feat->layer1, size_layer1));
-  gpuErrchk(cudaMemcpy(dev_feat->layer1, host_feat->layer1, size_layer1,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_layer2 = sizeof(host_feat->layer2);
-  gpuErrchk(cudaMalloc(&dev_feat->layer2, size_layer2));
-  gpuErrchk(cudaMemcpy(dev_feat->layer2, host_feat->layer2, size_layer2,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_layer3 = sizeof(host_feat->layer3);
-  gpuErrchk(cudaMalloc(&dev_feat->layer3, size_layer3));
-  gpuErrchk(cudaMemcpy(dev_feat->layer3, host_feat->layer3, size_layer3,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_layer4 = sizeof(host_feat->layer4);
-  gpuErrchk(cudaMalloc(&dev_feat->layer4, size_layer4));
-  gpuErrchk(cudaMemcpy(dev_feat->layer4, host_feat->layer4, size_layer4,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_layer5 = sizeof(host_feat->layer5);
-  gpuErrchk(cudaMalloc(&dev_feat->layer5, size_layer5));
-  gpuErrchk(cudaMemcpy(dev_feat->layer5, host_feat->layer5, size_layer5,
-                       cudaMemcpyHostToDevice));
-
-  size_t size_output = sizeof(host_feat->output);
-  gpuErrchk(cudaMalloc(&dev_feat->output, size_output));
-  gpuErrchk(cudaMemcpy(dev_feat->output, host_feat->output, size_output,
-                       cudaMemcpyHostToDevice));
-
-  printf("FeatureDevice successfully allocated and moved to GPU.\n");
-}
-
-void FreeFeatureDevice(FeatureDevice *feat) {
-  gpuErrchk(cudaFree(feat->input));
-  gpuErrchk(cudaFree(feat->layer1));
-  gpuErrchk(cudaFree(feat->layer2));
-  gpuErrchk(cudaFree(feat->layer3));
-  gpuErrchk(cudaFree(feat->layer4));
-  gpuErrchk(cudaFree(feat->layer5));
-  gpuErrchk(cudaFree(feat->output));
-}
-// end Paulie D.
-
-double relu(double x) { return x * (x > 0); }
-
-double relugrad(double y) { return y > 0; }
-
 // not gonna split w and h, just in_sz.
 void Maxpooler(double *dev_feat_in, double *dev_feat_out, int in_sz,
                int channels) {
@@ -460,39 +335,82 @@ void FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m,
   dim3 blockDim(TPD, TPD);
   dim3 gridDim((n + blockDim.x - 1) / blockDim.x,
                (m + blockDim.y - 1) / blockDim.y);
-  // a is feat->layer5, b is lenet->weight5_6, c is features->output
-  // a.shape=(120, 1, 1) b.shape=(120 * 1 * 1, 10) c.shape=(10)
+
+  // int total_threads = gridDim.x * gridDim.y * TPD * TPD;
+  // printf("GEMM blockDim (%d, %d) gridDim(%d, %d)\n", blockDim.x, blockDim.y,
+  //        gridDim.x, gridDim.y);
+  //  a is feat->layer5, b is lenet->weight5_6, c is features->output
+  //  a.shape=(120, 1, 1) b.shape=(120 * 1 * 1, 10) c.shape=(10)
   naiveOneDimKernel<<<gridDim, blockDim>>>(dev_a, dev_b, dev_c, m, l, n);
 }
-static void CUDAForward(LeNet5 *host_model, Feature *host_feat,
-                        LeNet5Device *dev_model, FeatureDevice *dev_feat) {
-  // maxpool and onedim need wrappers
+
+double relu(double x) { return x * (x > 0); }
+
+double relugrad(double y) { return y > 0; }
+
+static void CUDAForward(Feature *host_feat, LeNet5Device *dev_model,
+                        FeatureDevice *dev_feat) {
   ConvoluteForward(dev_feat->input, dev_feat->layer1, dev_model->weight0_1,
                    dev_model->bias0_1, INPUT, LAYER1, LENGTH_FEATURE0,
                    LENGTH_FEATURE0);
+  cudaDeviceSynchronize();
+
   Maxpooler(dev_feat->layer1, dev_feat->layer2, LENGTH_FEATURE1, LAYER1);
+  cudaDeviceSynchronize();
+
   ConvoluteForward(dev_feat->layer2, dev_feat->layer3, dev_model->weight2_3,
                    dev_model->bias2_3, LAYER2, LAYER3, LENGTH_FEATURE2,
                    LENGTH_FEATURE2);
+  cudaDeviceSynchronize();
+
   Maxpooler(dev_feat->layer3, dev_feat->layer4, LENGTH_FEATURE3, LAYER3);
+  cudaDeviceSynchronize();
+
   ConvoluteForward(dev_feat->layer4, dev_feat->layer5, dev_model->weight4_5,
                    dev_model->bias4_5, LAYER4, LAYER5, LENGTH_FEATURE4,
                    LENGTH_FEATURE4);
+  cudaDeviceSynchronize();
+
   FullyConnectedFused(dev_feat->layer5, dev_model->weight5_6, dev_feat->output,
                       LENGTH_FEATURE5, LAYER5, OUTPUT);
+  cudaDeviceSynchronize();
 
-  int TBD = 16; // threads per dim per block
-  dim3 dimBlock(TBD, TBD);
-  dim3 dimGrid((OUTPUT + blockDim.x - 1) / blockDim.x,
+  /*
+  UnloadFeatureFromDevice(host_feat, dev_feat);
+  printf("Results from last conv:\n");
+  for (int c = 0; c < LAYER5; c++) {
+    printf("\n\nChannel: %d\n", c);
+    for (int i = 0; i < LENGTH_FEATURE5; i++) {
+      printf("\n");
+      for (int j = 0; j < LENGTH_FEATURE5; j++) {
+        printf("%.2lf, ", host_feat->layer5[c][i][j]);
+      }
+    }
+  }*/
+
+  /*int TBD = 16; // threads per dim per block
+  dim3 blockDim(TBD, TBD);
+  dim3 gridDim((OUTPUT + blockDim.x - 1) / blockDim.x,
                (1 + blockDim.y - 1) / blockDim.y);
-  ActionAndBias<<<dimGrid, dimBlock>>>(dev_feat->output, OUTPUT,
+  ActionAndBias<<<gridDim, blockDim>>>(dev_feat->output, OUTPUT,
                                        LENGTH_FEATURE5, dev_model->bias5_6);
-
+  */
   /// output is 10 but just allocate a full warp size of 32 // wait we dont need
   /// that
   // SoftmaxWithoutLoss<<<1,32>>>(dev_feat->output, double *output, OUTPUT);
-  gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output, OUTPUT,
-                       cudaMemcpyDeviceToHost));
+  // gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output, OUTPUT *
+  // sizeof(double),
+  //                     cudaMemcpyDeviceToHost));
+  UnloadFeatureFromDevice(host_feat, dev_feat);
+
+  int DEBUG = 0;
+  if (DEBUG) {
+    printf("OUTPUT:\n");
+    for (int i = 0; i < OUTPUT; i++) {
+      printf("%lf, ", host_feat->output[i]);
+    }
+    // printf("\nCUDAForward() done\n");
+  }
 }
 
 static void forward(LeNet5 *lenet, Feature *features,
@@ -638,12 +556,180 @@ uint8 Predict(LeNet5 *lenet, image input, uint8 count) {
   return get_result(&features, count);
 }
 
-uint8 CudaPredict(LeNet5 *host_model, LeNet5Device *dev_model,
-                  FeatureDevice *dev_feat, image input, uint8 count) {
-  Feature host_feat = {0};
-  load_input(&host_feat, input);
-  CUDAForward(host_model, &host_feat, dev_model, dev_feat);
-  return get_result(&host_feat, count);
+uint8 CudaPredict(LeNet5Device *dev_model, Feature *host_feat,
+                  FeatureDevice *dev_feat, image input, uint8 count,
+                  LeNet5 *host_model) {
+  load_input(host_feat, input);
+  CopyInput(host_feat, dev_feat);
+
+  // test that the device recieved the input
+  int ensure_copied = 0;
+  if (ensure_copied) {
+    Feature testing = {0};
+    UnloadFeatureFromDevice(&testing, dev_feat);
+    int input_copy_fail = CompareFeatures(&testing, host_feat);
+    printf("Input copy worked? %d\n", input_copy_fail);
+  }
+  /*
+  for (int i = 0; i < LENGTH_FEATURE0; i++) {
+    for (int j = 0; j < LENGTH_FEATURE0; j++) {
+      printf("[%d][%d][%d] %.3lf, %.3lf\n", 0, i, j, host_feat->input[0][i][j],
+             testing.input[0][i][j]);
+    }
+  }*/
+
+  CUDAForward(host_feat, dev_model, dev_feat);
+
+  // can pass NULL for host_model to not compare to CPU
+  if (host_model && 0) {
+    fprintf(stderr, "VERY VERY BAD\n");
+    Feature testing_cpu_feat = {0};
+    forward(host_model, &testing_cpu_feat, relu);
+    if (!CompareFeatures(host_feat, &testing_cpu_feat)) {
+      fprintf(stderr, "Failure!\n");
+    }
+  }
+  return get_result(host_feat, count);
+}
+
+void CopyInput(Feature *host_feat, FeatureDevice *dev_feat) {
+  size_t input_size = sizeof(host_feat->input);
+  // printf("Copying host_feat->input of size %d to device...\n", input_size);
+  gpuErrchk(cudaMemcpy(dev_feat->input, host_feat->input, input_size,
+                       cudaMemcpyHostToDevice));
+}
+
+void PrepareLeNet5Device(LeNet5 *host_model, LeNet5Device *dev_model) {
+  // int k_sq = LENGTH_KERNEL * LENGTH_KERNEL;
+
+  /*
+  int size_w01_temp = INPUT * LAYER1 * k_sq * sizeof(double);
+  printf("Size of w01 calc: %d, sizeof() call: %d\n", size_w01_temp,
+         sizeof(host_model->weight0_1));
+  */
+  // WEIGHTS
+
+  size_t size_w01 = sizeof(host_model->weight0_1);
+  gpuErrchk(cudaMalloc(&dev_model->weight0_1, size_w01));
+  gpuErrchk(cudaMemcpy(dev_model->weight0_1, host_model->weight0_1, size_w01,
+                       cudaMemcpyHostToDevice));
+
+  int size_w23 = sizeof(host_model->weight2_3);
+  gpuErrchk(cudaMalloc(&dev_model->weight2_3, size_w23));
+  gpuErrchk(cudaMemcpy(dev_model->weight2_3, host_model->weight2_3, size_w23,
+                       cudaMemcpyHostToDevice));
+
+  int size_w45 = sizeof(host_model->weight4_5);
+  gpuErrchk(cudaMalloc(&dev_model->weight4_5, size_w45));
+  gpuErrchk(cudaMemcpy(dev_model->weight4_5, host_model->weight4_5, size_w45,
+                       cudaMemcpyHostToDevice));
+
+  int size_w56 = sizeof(host_model->weight5_6);
+  gpuErrchk(cudaMalloc(&dev_model->weight5_6, size_w56));
+  gpuErrchk(cudaMemcpy(dev_model->weight5_6, host_model->weight5_6, size_w56,
+                       cudaMemcpyHostToDevice));
+
+  // BIASES
+  int size_b01 = sizeof(host_model->bias0_1);
+  gpuErrchk(cudaMalloc(&dev_model->bias0_1, size_b01));
+  gpuErrchk(cudaMemcpy(dev_model->bias0_1, host_model->bias0_1, size_b01,
+                       cudaMemcpyHostToDevice));
+
+  int size_b23 = sizeof(host_model->bias2_3);
+  gpuErrchk(cudaMalloc(&dev_model->bias2_3, size_b23));
+  gpuErrchk(cudaMemcpy(dev_model->bias2_3, host_model->bias2_3, size_b23,
+                       cudaMemcpyHostToDevice));
+
+  int size_b45 = sizeof(host_model->bias4_5);
+  gpuErrchk(cudaMalloc(&dev_model->bias4_5, size_b45));
+  gpuErrchk(cudaMemcpy(dev_model->bias4_5, host_model->bias4_5, size_b45,
+                       cudaMemcpyHostToDevice));
+
+  int size_b56 = sizeof(host_model->bias5_6);
+  gpuErrchk(cudaMalloc(&dev_model->bias5_6, size_b56));
+  gpuErrchk(cudaMemcpy(dev_model->bias5_6, host_model->bias5_6, size_b56,
+                       cudaMemcpyHostToDevice));
+
+  printf("LeNet5Device successfully allocated and moved to GPU.\n");
+}
+
+void FreeLeNet5Device(LeNet5Device *model) {
+  gpuErrchk(cudaFree(model->weight0_1));
+  gpuErrchk(cudaFree(model->weight2_3));
+  gpuErrchk(cudaFree(model->weight4_5));
+  gpuErrchk(cudaFree(model->weight5_6));
+
+  gpuErrchk(cudaFree(model->bias0_1));
+  gpuErrchk(cudaFree(model->bias2_3));
+  gpuErrchk(cudaFree(model->bias4_5));
+  gpuErrchk(cudaFree(model->bias5_6));
+}
+
+// for debugging
+void UnloadFeatureFromDevice(Feature *host_feat, FeatureDevice *dev_feat) {
+  size_t size_input = sizeof(host_feat->input);
+  gpuErrchk(cudaMemcpy(host_feat->input, dev_feat->input, size_input,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_layer1 = sizeof(host_feat->layer1);
+  gpuErrchk(cudaMemcpy(host_feat->layer1, dev_feat->layer1, size_layer1,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_layer2 = sizeof(host_feat->layer2);
+  gpuErrchk(cudaMemcpy(host_feat->layer2, dev_feat->layer2, size_layer2,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_layer3 = sizeof(host_feat->layer3);
+  gpuErrchk(cudaMemcpy(host_feat->layer3, dev_feat->layer3, size_layer3,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_layer4 = sizeof(host_feat->layer4);
+  gpuErrchk(cudaMemcpy(host_feat->layer4, dev_feat->layer4, size_layer4,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_layer5 = sizeof(host_feat->layer5);
+  gpuErrchk(cudaMemcpy(host_feat->layer5, dev_feat->layer5, size_layer5,
+                       cudaMemcpyDeviceToHost));
+
+  size_t size_output = sizeof(host_feat->output);
+  gpuErrchk(cudaMemcpy(host_feat->output, dev_feat->output, size_output,
+                       cudaMemcpyDeviceToHost));
+
+  // printf("FeatureDevice unloaded back to CPU.\n");
+}
+void PrepareFeatureDevice(Feature *host_feat, FeatureDevice *dev_feat) {
+  size_t size_input = sizeof(host_feat->input);
+  gpuErrchk(cudaMalloc(&dev_feat->input, size_input));
+
+  size_t size_layer1 = sizeof(host_feat->layer1);
+  gpuErrchk(cudaMalloc(&dev_feat->layer1, size_layer1));
+
+  size_t size_layer2 = sizeof(host_feat->layer2);
+  gpuErrchk(cudaMalloc(&dev_feat->layer2, size_layer2));
+
+  size_t size_layer3 = sizeof(host_feat->layer3);
+  gpuErrchk(cudaMalloc(&dev_feat->layer3, size_layer3));
+
+  size_t size_layer4 = sizeof(host_feat->layer4);
+  gpuErrchk(cudaMalloc(&dev_feat->layer4, size_layer4));
+
+  size_t size_layer5 = sizeof(host_feat->layer5);
+  gpuErrchk(cudaMalloc(&dev_feat->layer5, size_layer5));
+
+  size_t size_output = sizeof(host_feat->output);
+  gpuErrchk(cudaMalloc(&dev_feat->output, size_output));
+
+  printf("FeatureDevice layers successfully allocated on GPU.\n");
+}
+
+void FreeFeatureDevice(FeatureDevice *feat) {
+  gpuErrchk(cudaFree(feat->input));
+  gpuErrchk(cudaFree(feat->layer1));
+  gpuErrchk(cudaFree(feat->layer2));
+  gpuErrchk(cudaFree(feat->layer3));
+  gpuErrchk(cudaFree(feat->layer4));
+  gpuErrchk(cudaFree(feat->layer5));
+  gpuErrchk(cudaFree(feat->output));
 }
 
 void Initial(LeNet5 *lenet) {
@@ -669,4 +755,44 @@ void Initial(LeNet5 *lenet) {
     ;
   for (int *pos = (int *)lenet->bias0_1; pos < (int *)(lenet + 1); *pos++ = 0)
     ;
+}
+
+#define EPSILON 1e-6
+// a host b dev
+int CompareFeatures(Feature *a, Feature *b) {
+  int all_match = 1;
+// Compare a 3D array
+#define COMPARE_3D(name, C, H, W)                                              \
+  for (int c = 0; c < (C); ++c)                                                \
+    for (int i = 0; i < (H); ++i)                                              \
+      for (int j = 0; j < (W); ++j) {                                          \
+        double va = a->name[c][i][j];                                          \
+        double vb = b->name[c][i][j];                                          \
+        if (fabs(va - vb) > EPSILON) {                                         \
+          printf(#name " mismatch at [%d][%d][%d]: %f != %f\n", c, i, j, va,   \
+                 vb);                                                          \
+          all_match = 0;                                                       \
+        }                                                                      \
+      }
+
+// Compare a 1D array
+#define COMPARE_1D(name, N)                                                    \
+  for (int i = 0; i < (N); ++i) {                                              \
+    double va = a->name[i];                                                    \
+    double vb = b->name[i];                                                    \
+    if (fabs(va - vb) > EPSILON) {                                             \
+      printf(#name " mismatch at [%d]: %f != %f\n", i, va, vb);                \
+      all_match = 0;                                                           \
+    }                                                                          \
+  }
+
+  COMPARE_3D(input, INPUT, LENGTH_FEATURE0, LENGTH_FEATURE0);
+  COMPARE_3D(layer1, LAYER1, LENGTH_FEATURE1, LENGTH_FEATURE1);
+  COMPARE_3D(layer2, LAYER2, LENGTH_FEATURE2, LENGTH_FEATURE2);
+  COMPARE_3D(layer3, LAYER3, LENGTH_FEATURE3, LENGTH_FEATURE3);
+  COMPARE_3D(layer4, LAYER4, LENGTH_FEATURE4, LENGTH_FEATURE4);
+  COMPARE_3D(layer5, LAYER5, LENGTH_FEATURE5, LENGTH_FEATURE5);
+  COMPARE_1D(output, OUTPUT);
+
+  return all_match;
 }

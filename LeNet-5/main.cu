@@ -1,5 +1,6 @@
 ﻿#include "lenet.h"
 #include <cstdlib>
+#include <cuda_runtime_api.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +25,8 @@ void showProgress(int progress, int total) {
   printf("\r[");
   for (int i = 0; i < filled; ++i)
     printf("=");
+  // testing things
+
   for (int i = filled; i < bar_width; ++i)
     printf(" ");
   printf("] %d%%", (int)(ratio * 100));
@@ -45,7 +48,7 @@ int read_from_csv(FILE *fp, int n, image img) {
     return -1;
   }
 
-  if (DEBUG)
+  if (DEBUG && 0)
     printf("Read in from csv: %s\n", line);
 
   char *ptr = line;      // start at start of line
@@ -59,13 +62,13 @@ int read_from_csv(FILE *fp, int n, image img) {
   }
   ptr++; // hmm
 
-  if (DEBUG)
+  if (DEBUG && 0)
     printf("Reading line digits:\n");
   for (int r = 0; r < n; r++) {
     for (int c = 0; c < n; c++) {
       uint8 found = atoi(ptr);
       img[r][c] = found;
-      if (DEBUG)
+      if (DEBUG && 0)
         printf("%d. ", found);
 
       char *next = strchr(ptr, ',');
@@ -98,7 +101,7 @@ FILE *load_csv_file(const char *filename) {
   ungetc(first_char, fp);
   if (first_char < '0' || first_char > '9') {
     char buffer[8192]; // needs to be as big or bigger than the header's size
-    fgets(buffer, sizeof(buffer), fp);
+    char *suppress = fgets(buffer, sizeof(buffer), fp);
   }
 
   return fp; // start of actual data is returned
@@ -154,8 +157,8 @@ int read_data(unsigned char (*data)[28][28], unsigned char label[],
     return 1;
   fseek(fp_image, 16, SEEK_SET);
   fseek(fp_label, 8, SEEK_SET);
-  fread(data, sizeof(*data) * count, 1, fp_image);
-  fread(label, count, 1, fp_label);
+  int suppress = fread(data, sizeof(*data) * count, 1, fp_image);
+  suppress = fread(label, count, 1, fp_label);
   fclose(fp_image);
   fclose(fp_label);
   return 0;
@@ -177,7 +180,7 @@ void training(LeNet5 *lenet, image *train_data, uint8 *train_label,
 
 int testing(LeNet5 *lenet, image *test_data, uint8 *test_label,
             int total_size) {
-  int right = 0, percent = 0;
+  int right = 0;        //, percent = 0;
   printf("Testing:\n"); // Paulie D. better printing
   for (int i = 0; i < total_size; ++i) {
     uint8 l = test_label[i];
@@ -204,7 +207,7 @@ int load(LeNet5 *lenet, char filename[]) {
   FILE *fp = fopen(filename, "rb");
   if (!fp)
     return 1;
-  fread(lenet, sizeof(LeNet5), 1, fp);
+  int suppress = fread(lenet, sizeof(LeNet5), 1, fp);
   fclose(fp);
   return 0;
 }
@@ -250,6 +253,30 @@ void foo() {
   free(test_label);
   // system("pause"); // windows thing and dumb
 }
+typedef struct TestResult {
+  int num_tested;
+  int correct;
+  float ms;
+} TestResult;
+
+TestResult TestCUDA(int num_to_test) {
+  cudaEvent_t start, end;
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+  float ms_run;
+
+  cudaEventRecord(start);
+
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+  cudaEventElapsedTime(&ms_run, start, end);
+
+  TestResult answer = {0};
+  answer.num_tested = num_to_test;
+  answer.correct = correct;
+  answer.ms = ms_run;
+  return answer;
+}
 
 int main() {
   FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
@@ -257,52 +284,71 @@ int main() {
     fprintf(stderr, "Csv not found, exiting\n");
     return 1;
   }
-  printf("LENGTH FEATURE 5 %d\n", LENGTH_FEATURE5);
 
   LeNet5 *lenet = (LeNet5 *)malloc(sizeof(LeNet5));
   if (!lenet) {
-    fprintf(stderr, "Failed to allocate LeNet5\n");
-    return 1;
+    fprintf(stderr, "Failed to allocate LeNet5. Exiting.\n");
+    return EXIT_FAILURE;
   }
-  load(lenet, LENET_FILE);
+  if (load(lenet, LENET_FILE)) {
+    fprintf(stderr, "Failure loading lenet. Exiting.\n");
+    return EXIT_FAILURE;
+  }
 
+  // structure on CPU that holds pointers to where we allocate each layer on the
+  // GPU
   LeNet5Device *dev_lenet = (LeNet5Device *)malloc(sizeof(LeNet5Device));
   PrepareLeNet5Device(lenet, dev_lenet);
 
-  Feature host_feat = {0};
+  Feature *host_feat = (Feature *)malloc(sizeof(Feature));
+  // feature is a "scratch pad" for intermediate results, really only used for
+  // passing the sizes of each feature to cudaMalloc
   FeatureDevice *dev_feat = (FeatureDevice *)malloc(sizeof(FeatureDevice));
-  PrepareFeatureDevice(&host_feat, dev_feat);
+  // we will want a static buffer on GPU to read and write from
+  PrepareFeatureDevice(host_feat, dev_feat);
 
-  return EXIT_SUCCESS;
+  if (!dev_lenet || !dev_feat || !host_feat) {
+    fprintf(stderr, "Allocation failures, exiting.\n");
+    return EXIT_FAILURE;
+  }
 
   int correct = 0;
-  int num_to_test = 1000;
-  for (int i = 0; i < num_to_test; i++) { // test 100 images
+  int num_to_test = 10000;
+  for (int i = 0; i < num_to_test; i++) { // test some number of images
+    if (DEBUG)
+      printf("\nIMAGE NUMBER %d\n\n", i);
     image img;
     int test_label = read_from_csv(csv, 28, img); // returns label
     if (test_label < 0) {
-      return test_label; // failure to read
+      return test_label; // failure to read, fix this TODO
     }
     if (DEBUG) {
       // printf("Recieved image: %d.\n", test_label);
       print_image(img, 28);
     }
 
-    // int p = Predict(lenet, img, 10); // lets go look at this
-    int p = CudaPredict(lenet, dev_lenet, dev_feat, img, OUTPUT);
+    // int p = Predict(lenet, img, 10); // CPU version
+    // if you dont want CPU comparison of results, pass NULL instead of 'lenet'
+    int p = CudaPredict(dev_lenet, host_feat, dev_feat, img, OUTPUT, NULL);
 
-    if (p != test_label && 0) { // && 1 to display failures
+    correct += p == test_label;
+
+    int SHOW_FAILURES = 1;
+    if (p != test_label && SHOW_FAILURES) { // to display failures
       printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
       print_image(img, 28);
     }
     if (DEBUG)
       printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
   }
+
+  printf("Correct: %d, tested: %d\n", correct, num_to_test);
+
+  FreeFeatureDevice(dev_feat);
+  FreeLeNet5Device(dev_lenet);
+
   printf("Thanks!\n");
   // foo();
-  //
-  //
-  //
   // free(ALL THE THINGS); JUST KIDDING THATS FOR LOSERS #thanksOS
   return 0;
 }
