@@ -160,7 +160,7 @@ inline float quantizeUp(int8_t in, float s) {
 	return answer;
 }
 
-void makeQuantizeAware(float *arr, size_t n) {
+float makeQuantizeAware(float *arr, size_t n) {
 	float range_max = rangeAbsMax(arr, n);
 	//printf("Range Max: %f\n", range_max);
 	for (size_t i = 0; i < n; i++) {
@@ -170,6 +170,7 @@ void makeQuantizeAware(float *arr, size_t n) {
 		arr[i] = up;
 		if (i % 500 == 0 && old > 0.0f && 0) printf("RANGE: %f, old: %f, down %d, up: %f\n", range_max, old, down, up); // show some examples
 	}
+	return range_max; // can save as scaling factor
 }
 
 

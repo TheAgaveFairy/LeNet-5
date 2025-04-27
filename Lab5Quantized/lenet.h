@@ -19,6 +19,7 @@ void Initial(LeNet5 *lenet);
 
 #pragma once
 
+#include <cstdint>
 #define LENGTH_KERNEL	5
 
 #define LENGTH_FEATURE0	32
@@ -56,6 +57,29 @@ typedef struct LeNet5
 	float bias5_6[OUTPUT];
 
 }LeNet5;
+
+typedef struct LeNet5Quantized {
+	int8_t weight0_1[INPUT][LAYER1][LENGTH_KERNEL][LENGTH_KERNEL];
+	int8_t weight2_3[LAYER2][LAYER3][LENGTH_KERNEL][LENGTH_KERNEL];
+	int8_t weight4_5[LAYER4][LAYER5][LENGTH_KERNEL][LENGTH_KERNEL];
+	int8_t weight5_6[LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5][OUTPUT];
+
+	int8_t bias0_1[LAYER1];
+	int8_t bias2_3[LAYER3];
+	int8_t bias4_5[LAYER5];
+	int8_t bias5_6[OUTPUT];
+
+
+	float w0_1s;
+	float w1_2s;
+	float w4_5s;
+	float w5_6s;
+
+	float b0_1s;
+	float b1_2s;
+	float b4_5s;
+	float b5_6s;
+} LeNet5Quantized;
 
 typedef struct Feature
 {

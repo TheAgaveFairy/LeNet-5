@@ -12,7 +12,7 @@
 #define COUNT_TRAIN		60000
 #define COUNT_TEST		10000
 
-#define DEBUG 1
+#define DEBUG 0
 
 
 // Paulie D. just a prettier progress bar, saves screen space
@@ -255,7 +255,7 @@ int main()
 	load(lenet, LENET_FILE);
 
 	int correct = 0;
-	int num_to_test = 2;
+	int num_to_test = 1000;
 	for (int i = 0; i < num_to_test; i++) { // test 100 images
 		image img;
 		int test_label = read_from_csv(csv, 28, img); // returns label
@@ -268,14 +268,16 @@ int main()
 		}
 
 		int p = Predict(lenet, img, 10); // lets go look at this
-		if (p != test_label && 0) { // && 1 to display failures
+		if (p == test_label) correct++;
+		if (p != test_label && 1) { // && 1 to display failures
 			printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
 			print_image(img, 28);
 		}
 		if (DEBUG) printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
 	}
 	printf("Finished csv run\n");
+	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 1.0) / num_to_test);
 
-	foo();
+	//foo();
 	return EXIT_SUCCESS;
 }
