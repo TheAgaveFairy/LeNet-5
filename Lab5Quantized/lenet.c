@@ -366,6 +366,7 @@ float ConvertLayer(float *in_layer, int8_t *out_layer, size_t input_size) {
 	for (size_t i = 0; i < num_elems; i++) {
 		printf("%d, ", out_layer[i]);
 	}
+		printf("\n");
 	}
 	return scale;
 }
