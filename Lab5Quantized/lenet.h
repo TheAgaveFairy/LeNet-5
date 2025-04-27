@@ -19,7 +19,8 @@ void Initial(LeNet5 *lenet);
 
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
+
 #define LENGTH_KERNEL	5
 
 #define LENGTH_FEATURE0	32
@@ -71,12 +72,12 @@ typedef struct LeNet5Quantized {
 
 
 	float w0_1s;
-	float w1_2s;
+	float w2_3s;
 	float w4_5s;
 	float w5_6s;
 
 	float b0_1s;
-	float b1_2s;
+	float b2_3s;
 	float b4_5s;
 	float b5_6s;
 } LeNet5Quantized;
@@ -99,3 +100,5 @@ void Train(LeNet5 *lenet, image input, uint8 label);
 uint8 Predict(LeNet5 *lenet, image input, uint8 count);
 
 void Initial(LeNet5 *lenet);
+
+LeNet5Quantized * QuantizeModel(LeNet5 *original);

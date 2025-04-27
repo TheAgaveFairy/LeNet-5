@@ -222,8 +222,13 @@ void foo()
 
 
 	LeNet5 *lenet = (LeNet5 *)malloc(sizeof(LeNet5));
-	if (load(lenet, LENET_FILE))
-		Initial(lenet);
+	//if (load(lenet, LENET_FILE)) {
+	//	Initial(lenet);
+	if (!load(lenet, LENET_FILE)) {
+		if (DEBUG) printf("Model already trained. Skipping.\n");
+		return;
+	}
+	Initial(lenet);
 	clock_t start = clock();
 	int batches[] = { 300 };
 	for (int i = 0; i < sizeof(batches) / sizeof(*batches);++i)
@@ -242,6 +247,7 @@ void foo()
 
 int main()
 {
+	foo();
 	FILE *csv = load_csv_file("mnist_test-1.csv"); // header skipped
 	if (!csv) {
 		fprintf(stderr, "Csv not found, exiting\n");
@@ -255,7 +261,7 @@ int main()
 	load(lenet, LENET_FILE);
 
 	int correct = 0;
-	int num_to_test = 1000;
+	int num_to_test = 250;
 	for (int i = 0; i < num_to_test; i++) { // test 100 images
 		image img;
 		int test_label = read_from_csv(csv, 28, img); // returns label
@@ -278,6 +284,7 @@ int main()
 	printf("Finished csv run\n");
 	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 1.0) / num_to_test);
 
+	LeNet5Quantized *quantized_model = QuantizeModel(lenet);
 	//foo();
 	return EXIT_SUCCESS;
 }

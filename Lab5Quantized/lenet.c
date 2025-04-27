@@ -341,6 +341,73 @@ uint8 Predict(LeNet5 *lenet, image input,uint8 count)
 	return get_result(&features, count);
 }
 
+float ConvertLayer(float *in_layer, int8_t *out_layer, size_t input_size) {
+	//size_t input_size = sizeof(original->weight0_1);
+	size_t num_elems = input_size / sizeof(float);
+	float scale = rangeAbsMax(in_layer, num_elems);
+	//printf("original->weight0_1 size: %luB, = %lu floats\n", input_size, num_elems);
+
+	/*int8_t *new_quantized = (int8_t *)malloc(num_elems * sizeof(int8_t));
+	if (!new_quantized) {
+		fprintf(stderr, "Failure to allocate quantized layer during conversion!\n");
+		return NULL;
+	}*/
+
+	float *pos = in_layer;
+	for (size_t i = 0; i < num_elems; i++) {
+		out_layer[i] = quantizeDown(pos[i], scale);
+	}
+
+	int printout = 1;
+	if (printout) {
+
+	pos = in_layer;
+	printf("Quantized layer with scaling factor %lf:\n", scale);
+	for (size_t i = 0; i < num_elems; i++) {
+		printf("%d, ", out_layer[i]);
+	}
+	}
+	return scale;
+}
+
+LeNet5Quantized * QuantizeModel(LeNet5 *original) {
+
+	LeNet5Quantized *quantized_model = (LeNet5Quantized *)malloc(sizeof(LeNet5Quantized));
+	if (!quantized_model) {
+		fprintf(stderr, "Failure to allocate quantized model during conversion!\n");
+		return NULL;
+	}
+
+	float scale;
+	// weights
+	scale = ConvertLayer((float *)&original->weight0_1, (int8_t *)quantized_model->weight0_1, sizeof(original->weight0_1));
+	quantized_model->w0_1s = scale;
+
+	scale = ConvertLayer((float *)&original->weight2_3, (int8_t *)quantized_model->weight2_3, sizeof(original->weight2_3));
+	quantized_model->w2_3s = scale;
+
+	scale = ConvertLayer((float *)&original->weight4_5, (int8_t *)quantized_model->weight4_5, sizeof(original->weight4_5));
+	quantized_model->w4_5s = scale;
+	
+	scale = ConvertLayer((float *)&original->weight5_6, (int8_t *)quantized_model->weight5_6, sizeof(original->weight5_6));
+	quantized_model->w5_6s = scale;
+	
+	// and biases
+	scale = ConvertLayer((float *)&original->bias0_1, (int8_t *)quantized_model->bias0_1, sizeof(original->bias0_1));
+	quantized_model->b0_1s = scale;
+	
+	scale = ConvertLayer((float *)&original->bias2_3, (int8_t *)quantized_model->bias2_3, sizeof(original->bias2_3));
+	quantized_model->b2_3s = scale;
+	
+	scale = ConvertLayer((float *)&original->bias4_5, (int8_t *)quantized_model->bias4_5, sizeof(original->bias4_5));
+	quantized_model->b4_5s = scale;
+	
+	scale = ConvertLayer((float *)&original->bias5_6, (int8_t *)quantized_model->bias5_6, sizeof(original->bias5_6));
+	quantized_model->b5_6s = scale;
+
+	return quantized_model;
+}
+
 void Initial(LeNet5 *lenet)
 {
 	for (float *pos = (float *)lenet->weight0_1; pos < (float *)lenet->bias0_1; *pos++ = (float)f64rand());
