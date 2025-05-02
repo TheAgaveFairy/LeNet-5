@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define TPD 16 // threads per dimension -> dim3(32, 32). 16 or 32
+
 #define GETLENGTH(array) (sizeof(array) / sizeof(*(array)))
 
 #define GETCOUNT(array) (sizeof(array) / sizeof(double))
@@ -281,7 +283,8 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
   int h_out = in_height - LENGTH_KERNEL + 1;
   int w_out = in_width - LENGTH_KERNEL + 1;
 
-  int TPD = 16; // threads per dimension, not sure what this really needs to be
+  // int TPD = 16; // threads per dimension, not sure what this really needs to
+  // be
   dim3 blockDim(TPD, TPD);
   dim3 gridDim((w_out + blockDim.x - 1) / blockDim.x,
                (h_out + blockDim.y - 1) / blockDim.y);
@@ -317,7 +320,8 @@ void ConvoluteForward(double *d_in, double *d_out, double *d_weight,
 // not gonna split w and h, just in_sz.
 void Maxpooler(double *dev_feat_in, double *dev_feat_out, int in_sz,
                int channels) {
-  int TPD = 16; // threads per dimension, not sure what this really needs to be
+  // int TPD = 16; // threads per dimension, not sure what this really needs to
+  // be
   dim3 blockDim(TPD, TPD);
   dim3 gridDim((in_sz / 2 + blockDim.x - 1) / blockDim.x,
                (in_sz / 2 + blockDim.y - 1) / blockDim.y);
@@ -331,7 +335,8 @@ void Maxpooler(double *dev_feat_in, double *dev_feat_out, int in_sz,
 }
 void FullyConnectedFused(double *dev_a, double *dev_b, double *dev_c, int m,
                          int l, int n) {
-  int TPD = 16; // threads per dimension, not sure what this really needs to be
+  // int TPD = 16; // threads per dimension, not sure what this really needs to
+  // be
   dim3 blockDim(TPD, TPD);
   dim3 gridDim((n + blockDim.x - 1) / blockDim.x,
                (m + blockDim.y - 1) / blockDim.y);
