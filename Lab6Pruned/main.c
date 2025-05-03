@@ -13,7 +13,7 @@
 #define COUNT_TEST		10000
 
 #define DEBUG 0
-#define PRUNING_RATE 30 // 100
+#define PRUNING_RATE 90 // 100
 #define PRUNING_FREQ 3 // after how many batches
 
 
