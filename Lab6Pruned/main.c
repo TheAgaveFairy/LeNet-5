@@ -13,7 +13,7 @@
 #define COUNT_TEST		10000
 
 #define DEBUG 0
-#define PRUNING_RATE 70 // 100
+#define PRUNING_RATE 30 // 100
 #define PRUNING_FREQ 3 // after how many batches
 
 
@@ -162,7 +162,7 @@ void training(LeNet5 *lenet, image *train_data, uint8 *train_label, int batch_si
 		int first_ten_batches = batch_size * 10;
 		int batch_num = i / batch_size;
 		if (i >= batch_size * 10 && (batch_num % PRUNING_FREQ == 0) ){
-			printf("Pruning model at batch %d: %d%%\n", batch_num, PRUNING_RATE);
+			if (DEBUG) printf("Pruning model at batch %d: %d%%\n", batch_num, PRUNING_RATE);
 			PruneModel(lenet, PRUNING_RATE);
 		}
 
@@ -170,9 +170,9 @@ void training(LeNet5 *lenet, image *train_data, uint8 *train_label, int batch_si
 		  showProgress(i, total_size);
 			//printf("batchsize:%d\ttrain:%2d%%\n", batch_size, percent = i * 100 / total_size);
 	}
-	printf("Final pruning:\n");
+	if (DEBUG) printf("Final pruning:\n");
 	PruneModel(lenet, PRUNING_RATE);
-	printf("\n"); // Paulie D.
+	if (DEBUG) printf("\n"); // Paulie D.
 }
 
 int testing(LeNet5 *lenet, image *test_data, uint8 *test_label,int total_size)

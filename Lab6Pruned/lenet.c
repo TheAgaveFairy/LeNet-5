@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <float.h>
 
+#define DEBUG 0
+
 #define GETLENGTH(array) (sizeof(array)/sizeof(*(array)))
 
 #define GETCOUNT(array)  (sizeof(array)/sizeof(float))
@@ -411,37 +413,51 @@ LeNet5Quantized * QuantizeModel(LeNet5 *original) {
 }
 
 int compare(const void *a, const void *b) {
-	return (*(float *)a - *(float *)b);
+    float fa = *(const float *)a;
+    float fb = *(const float *)b;
+    
+    if (fa < fb) return -1;
+    if (fa > fb) return 1;
+    return 0;
 }
-
 void PruneModel(LeNet5 *lenet, int prune_percent) { // prune rate is out of 100
 	size_t model_size = sizeof(LeNet5);
 	size_t num_elems = model_size / sizeof(float);
 	float *temp_weights = (float *)malloc(model_size);
 	void *suppress = memcpy(temp_weights, lenet, model_size);
 
-	// make them abs valu\e
+	// make them abs value
 	for (size_t i = 0; i < num_elems; i++) {
 		temp_weights[i] = fabsf(temp_weights[i]);
+		//printf("%lf; ", temp_weights[i]);
 	}
 
 	qsort(temp_weights, num_elems, sizeof(float), compare);
+	/*
+	printf("Sorted weights by fabsf:\n");
+	for (size_t i = 0; i < num_elems; i++) {
+		printf("%lf; ", temp_weights[i]);
+	}
+	*/
 	size_t index_for_cutoff = (size_t)(num_elems * (float)prune_percent / 100.0);
 	float cutoff_value = temp_weights[index_for_cutoff];
+	if (DEBUG) printf("Cutoff index: %lu/%lu => %f\n", index_for_cutoff, num_elems, cutoff_value);
 
-	printf("Pruning values less than %f.\n", cutoff_value);
+	if (DEBUG) printf("Pruning values less than %f.\n", cutoff_value);
 
 	suppress = memcpy(temp_weights, lenet, model_size);
 	
+	int zeros = 0;
 	for(size_t i = 0; i < num_elems; i++) {
 		float temp_abs = temp_weights[i];
 		temp_abs = fabsf(temp_abs);
 
 		if (temp_abs <= cutoff_value) {
 			temp_weights[i] = 0.0f;
+			zeros++;
 		}
 	}
-
+	if (DEBUG) printf("Set %d to 0.0f.\n", zeros);
 	suppress = memcpy(lenet, temp_weights, model_size);
 }
 
