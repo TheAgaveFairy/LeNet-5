@@ -170,6 +170,8 @@ void training(LeNet5 *lenet, image *train_data, uint8 *train_label, int batch_si
 		  showProgress(i, total_size);
 			//printf("batchsize:%d\ttrain:%2d%%\n", batch_size, percent = i * 100 / total_size);
 	}
+	printf("Final pruning:\n");
+	PruneModel(lenet, PRUNING_RATE);
 	printf("\n"); // Paulie D.
 }
 

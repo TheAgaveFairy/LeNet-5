@@ -473,8 +473,8 @@ void PrintModel(LeNet5 *model) {
 	HELPER(model->bias5_6);
 
 	size_t total_elems_in_model = sizeof(LeNet5) / sizeof(float);
-	double percent_zeros = (double)zeros / (double)total_elems_in_model * 1.0;
-	printf("%lu / %lu = %lf zeros in model.\n", zeros, total_elems_in_model, percent_zeros);
+	double percent_zeros = (double)zeros / (double)total_elems_in_model * 100.0;
+	printf("%lu / %lu = %lf%% zeros in model.\n", zeros, total_elems_in_model, percent_zeros);
 }
 
 void Initial(LeNet5 *lenet)
