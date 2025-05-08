@@ -117,6 +117,63 @@ float makeQuantizeAware(float *arr, size_t n) {
 	return range_max; // can save as scaling factor
 }
 
+float UnpackLayer(int8_t *in_layer, float *out_layer, float scale, size_t n) {
+	int8_t *pos = in_layer;
+	for (size_t i = 0; i < n; i++) {
+		out_layer[i] = quantizeUp(pos[i], scale);
+	}
+	return scale;
+}
+
+// ow, ob = "o"riginal weights, biases
+// uw, ub = "u"npacked versions
+// ws, bs = "s"caling factors
+#define HELPER(ow, ob, uw, ub, ws, bs)										\
+	num_weights = sizeof(ow) / sizeof(int8_t);								\
+	num_bias = sizeof(ob) / sizeof(int8_t);									\
+	UnpackLayer((int8_t *)&ow, (float *)uw, ws, num_weights);				\
+	UnpackLayer((int8_t *)&ob, (float *)ub, bs, num_bias)
+
+static void QuantForward(LeNet5Quantized *model, Feature *features, float(*action)(float)) {
+	size_t num_weights, num_bias; // used by UNPACK macro
+
+	{
+		float w0_1[INPUT][LAYER1][LENGTH_KERNEL][LENGTH_KERNEL] = {0};
+		float b0_1[LAYER1] = {0};
+		
+		HELPER(model->weight0_1, model->bias0_1, w0_1, b0_1, model->w0_1s, model->b0_1s);
+		CONVOLUTION_FORWARD(features->input, features->layer1, w0_1, b0_1, action);
+	}
+
+	
+	SUBSAMP_MAX_FORWARD(features->layer1, features->layer2);
+
+	{
+		float w2_3[LAYER2][LAYER3][LENGTH_KERNEL][LENGTH_KERNEL];
+		float b2_3[LAYER3];
+
+		HELPER(model->weight2_3, model->bias2_3, w2_3, b2_3, model->w2_3s, model->b2_3s);
+		CONVOLUTION_FORWARD(features->layer2, features->layer3, w2_3, b2_3, action);
+	}
+
+	SUBSAMP_MAX_FORWARD(features->layer3, features->layer4);
+	
+	{
+		float w4_5[LAYER4][LAYER5][LENGTH_KERNEL][LENGTH_KERNEL];
+		float b4_5[LAYER5];
+	
+		HELPER(model->weight4_5, model->bias4_5, w4_5, b4_5, model->w4_5s, model->b4_5s);
+		CONVOLUTION_FORWARD(features->layer4, features->layer5, w4_5, b4_5, action);
+	}
+
+	{
+		float w5_6[LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5][OUTPUT];
+		float b5_6[OUTPUT];
+
+		HELPER(model->weight5_6, model->bias5_6, w5_6, b5_6, model->w5_6s, model->b5_6s);
+		DOT_PRODUCT_FORWARD(features->layer5, features->output, w5_6, b5_6, action);
+	}
+}
 
 static void forward(LeNet5 *lenet, Feature *features, float(*action)(float))
 {
@@ -224,6 +281,13 @@ uint8 Predict(LeNet5 *lenet, image input,uint8 count)
 	Feature features = { 0 };
 	load_input(&features, input);
 	forward(lenet, &features, relu);
+	return get_result(&features, count);
+}
+
+uint8 QuantPredict(LeNet5Quantized *model, image input, uint8 count) {
+	Feature features = {0};
+	load_input(&features, input);
+	QuantForward(model, &features, relu);
 	return get_result(&features, count);
 }
 

@@ -198,6 +198,23 @@ int load(LeNet5 *lenet, char filename[])
 }
 
 
+int saveQuantized(LeNet5Quantized *quant, char filename[])
+{
+	FILE *fp = fopen(filename, "wb");
+	if (!fp) return 1;
+	long written = fwrite(quant, sizeof(LeNet5Quantized), 1, fp);
+	fclose(fp);
+	return 0;
+}
+
+int loadQuantized(LeNet5Quantized *quant, char filename[])
+{
+	FILE *fp = fopen(filename, "rb");
+	if (!fp) return 1;
+	fread(quant, sizeof(LeNet5Quantized), 1, fp);
+	fclose(fp);
+	return 0;
+}
 
 void foo()
 {
@@ -285,6 +302,7 @@ int main()
 	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 1.0) / num_to_test);
 
 	LeNet5Quantized *quantized_model = QuantizeModel(lenet);
+	int saved = saveQuantized(quantized_model, "quant.dat");
 	//foo();
 	return EXIT_SUCCESS;
 }
