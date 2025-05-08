@@ -13,7 +13,7 @@
 #define COUNT_TEST		10000
 
 #define DEBUG 0
-#define PRUNING_RATE 90 // 100
+#define PRUNING_RATE 85 // 100
 #define PRUNING_FREQ 3 // after how many batches
 
 
@@ -166,7 +166,7 @@ void training(LeNet5 *lenet, image *train_data, uint8 *train_label, int batch_si
 			PruneModel(lenet, PRUNING_RATE);
 		}
 
-		if (i * 100 / total_size > percent)
+		if (i * 100 / total_size > percent && DEBUG)
 		  showProgress(i, total_size);
 			//printf("batchsize:%d\ttrain:%2d%%\n", batch_size, percent = i * 100 / total_size);
 	}
@@ -183,7 +183,7 @@ int testing(LeNet5 *lenet, image *test_data, uint8 *test_label,int total_size)
 		uint8 l = test_label[i];
 		int p = Predict(lenet, test_data[i], 10);
 		right += l == p;
-		showProgress(i, total_size); // Paulie D.
+		if (DEBUG) showProgress(i, total_size); // Paulie D.
 		//if (i * 100 / total_size > percent)
 			//printf("test:%2d%%\n", percent = i * 100 / total_size);
 	}
@@ -274,7 +274,7 @@ int main()
 	load(lenet, LENET_FILE);
 
 	int correct = 0;
-	int num_to_test = 250;
+	int num_to_test = 5000;
 	for (int i = 0; i < num_to_test; i++) { // test 100 images
 		image img;
 		int test_label = read_from_csv(csv, 28, img); // returns label
@@ -288,7 +288,7 @@ int main()
 
 		int p = Predict(lenet, img, 10); // lets go look at this
 		if (p == test_label) correct++;
-		if (p != test_label && 1) { // && 1 to display failures
+		if (p != test_label && 0) { // && 1 to display failures
 			printf("Testing digit: %d. Model predicts: %d.\n", test_label, p);
 			print_image(img, 28);
 		}

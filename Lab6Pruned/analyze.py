@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 def analyze_weights(filename):
     with open(filename, 'r') as f:
         content = f.read()
@@ -85,4 +87,9 @@ def analyze_weights(filename):
 
 
 if __name__ == "__main__":
-    analyze_weights("test.txt")
+    import sys
+    filename = "testing85.txt"
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    print("Analysing:", filename)
+    analyze_weights(filename)
