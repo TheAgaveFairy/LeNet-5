@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include "model.h"
 
 #define FILE_TRAIN_IMAGE		"train-images-idx3-ubyte"
 #define FILE_TRAIN_LABEL		"train-labels-idx1-ubyte"
@@ -76,7 +77,7 @@ FILE * load_csv_file(const char* filename) {
 	ungetc(first_char, fp);
 	if (first_char < '0' || first_char > '9') {
 		char buffer[8192]; // needs to be as big or bigger than the header's size
-		fgets(buffer, sizeof(buffer), fp);
+		char *suppress = fgets(buffer, sizeof(buffer), fp);
 	}
 
 	return fp; // start of actual data is returned
@@ -87,10 +88,10 @@ int read_data(unsigned char(*data)[28][28], unsigned char label[], const int cou
     FILE *fp_image = fopen(data_file, "rb");
     FILE *fp_label = fopen(label_file, "rb");
     if (!fp_image||!fp_label) return 1;
-	fseek(fp_image, 16, SEEK_SET);
-	fseek(fp_label, 8, SEEK_SET);
-	fread(data, sizeof(*data)*count, 1, fp_image);
-	fread(label,count, 1, fp_label);
+	int suppress = fseek(fp_image, 16, SEEK_SET);
+	suppress = fseek(fp_label, 8, SEEK_SET);
+	size_t supp = fread(data, sizeof(*data)*count, 1, fp_image);
+	supp = fread(label,count, 1, fp_label);
 	fclose(fp_image);
 	fclose(fp_label);
 	return 0;
@@ -124,7 +125,7 @@ int load(LeNet5 *lenet, char filename[])
 {
 	FILE *fp = fopen(filename, "rb");
 	if (!fp) return 1;
-	fread(lenet, sizeof(LeNet5), 1, fp);
+	size_t suppress = fread(lenet, sizeof(LeNet5), 1, fp);
 	fclose(fp);
 	return 0;
 }
@@ -133,7 +134,7 @@ int loadQuantized(LeNet5Quantized *quant, char filename[])
 {
 	FILE *fp = fopen(filename, "rb");
 	if (!fp) return 1;
-	fread(quant, sizeof(LeNet5Quantized), 1, fp);
+	size_t suppress = fread(quant, sizeof(LeNet5Quantized), 1, fp);
 	fclose(fp);
 	return 0;
 }
@@ -172,6 +173,8 @@ int main()
 	}
 	//printf("Finished csv run\n");
 	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 100.0) / num_to_test);
+	if (DEBUG) printf("\n\n\n");
+	if (DEBUG) PrintModel(lenet);
 
 	return EXIT_SUCCESS;
 }
