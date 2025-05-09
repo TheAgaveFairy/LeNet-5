@@ -1,12 +1,28 @@
+#include "quantweights.h"
 #include "lenet.h"
-#include <memory.h>
+//#include <memory.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <float.h>
+
+
+const LeNet5QHelper model_helper = {
+	INPUT * LAYER1 * LENGTH_KERNEL * LENGTH_KERNEL,
+	LAYER2 * LAYER3 * LENGTH_KERNEL * LENGTH_KERNEL,
+	LAYER4 * LAYER5 * LENGTH_KERNEL * LENGTH_KERNEL,
+	LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5 * OUTPUT,	
+	LAYER1,
+	LAYER3,
+	LAYER5,
+	OUTPUT,
+};
+
+const static size_t offset_bias = model_helper.sz_w0_1 + model_helper.sz_w2_3 + model_helper.sz_w4_5 + model_helper.sz_w5_6; // after this many bytes (int8_t), we reach the bias arrays
 
 #define DEBUG 0
 
@@ -135,14 +151,26 @@ float UnpackLayer(int8_t *in_layer, float *out_layer, float scale, size_t n) {
 	UnpackLayer((int8_t *)&ob, (float *)ub, bs, num_bias)
 
 static void QuantForward(LeNet5Quantized *model, Feature *features, float(*action)(float)) {
-	size_t num_weights, num_bias; // used by UNPACK macro
+	size_t num_weights, num_bias; // used by HELPER macro
 
 	{
+		int8_t w[INPUT][LAYER1][LENGTH_KERNEL][LENGTH_KERNEL] = {0};
+		int8_t b[LAYER1] = {0};
 		float w0_1[INPUT][LAYER1][LENGTH_KERNEL][LENGTH_KERNEL] = {0};
 		float b0_1[LAYER1] = {0};
+
+		int8_t *wpos = lenet;
+		void *suppress = memcpy(w, wpos, model_helper.sz_w0_1); //dest src bytes
+		int8_t *bpos = lenet + offset_bias;
+		suppress = memcpy(b, bpos, model_helper.sz_b0_1);
 		
-		HELPER(model->weight0_1, model->bias0_1, w0_1, b0_1, model->w0_1s, model->b0_1s);
+		HELPER(w, b, w0_1, b0_1, wscales[0], bscales[0]);
 		CONVOLUTION_FORWARD(features->input, features->layer1, w0_1, b0_1, action);
+
+		//HELPER(model->weight0_1, model->bias0_1, w0_1, b0_1, model->w0_1s, model->b0_1s);
+		//CONVOLUTION_FORWARD(features->input, features->layer1, w0_1, b0_1, action);
+
+
 	}
 
 	

@@ -1,25 +1,8 @@
-﻿/*
-@author : 范文捷
-@data    : 2016-04-20
-@note	: 根据Yann Lecun的论文《Gradient-based Learning Applied To Document Recognition》编写
-@api	:
-
-批量训练
-void TrainBatch(LeNet5 *lenet, image *inputs, const char(*resMat)[OUTPUT],uint8 *labels, int batchSize);
-
-训练
-void Train(LeNet5 *lenet, image input, const char(*resMat)[OUTPUT],uint8 label);
-
-预测
-uint8 Predict(LeNet5 *lenet, image input, const char(*resMat)[OUTPUT], uint8 count);
-
-初始化
-void Initial(LeNet5 *lenet);
-*/
-
-#pragma once
+﻿#pragma once
 
 #include <stdint.h>
+#include <stddef.h>
+//#include "lenet5_model.h"
 
 #define LENGTH_KERNEL	5
 
@@ -43,6 +26,19 @@ void Initial(LeNet5 *lenet);
 
 typedef unsigned char uint8;
 typedef uint8 image[28][28];
+
+// these should probably be size_t but at minimum they need 16 bits for all 50k params
+typedef struct LeNet5QHelper {
+	size_t sz_w0_1;// = INPUT * LAYER1 * LENGTH_KERNEL * LENGTH_KERNEL;
+	size_t sz_w2_3;// = LAYER2 * LAYER3 * LENGTH_KERNEL * LENGTH_KERNEL;
+	size_t sz_w4_5;// = LAYER4 * LAYER5 * LENGTH_KERNEL * LENGTH_KERNEL;
+	size_t sz_w5_6;// = LAYER5 * LENGTH_FEATURE5 * LENGTH_FEATURE5 * OUTPUT;
+	
+	size_t sz_b0_1;// = LAYER1;
+	size_t sz_b2_3;// = LAYER3;
+	size_t sz_b4_5;// = LAYER5;
+	size_t sz_b5_6;// = OUTPUT;
+} LeNet5QHelper;
 
 
 typedef struct LeNet5

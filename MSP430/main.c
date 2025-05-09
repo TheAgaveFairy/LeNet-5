@@ -4,6 +4,8 @@
 #include <time.h>
 #include <string.h>
 //#include "model.h"
+//#include "lenet5_model.h"
+#include "quantweights.h"
 
 #define FILE_TRAIN_IMAGE		"train-images-idx3-ubyte"
 #define FILE_TRAIN_LABEL		"train-labels-idx1-ubyte"
@@ -14,7 +16,6 @@
 #define COUNT_TEST		10000
 
 #define DEBUG 0
-
 
 // Paulie D. reads in the next row of data from an already loaded file, return 1 if success
 int read_from_csv(FILE *fp, int n, image img) {
@@ -96,40 +97,6 @@ int read_data(unsigned char(*data)[28][28], unsigned char label[], const int cou
 	fclose(fp_label);
 	return 0;
 }
-
-/*
-int testing(LeNet5 *lenet, image *test_data, uint8 *test_label,int total_size)
-{
-	int right = 0, percent = 0;
-	for (int i = 0; i < total_size; ++i)
-	{
-		uint8 l = test_label[i];
-		int p = Predict(lenet, test_data[i], 10);
-		right += l == p;
-		//if (i * 100 / total_size > percent)
-			//printf("test:%2d%%\n", percent = i * 100 / total_size);
-	}
-	return right;
-}
-*/
-int save(LeNet5 *lenet, char filename[])
-{
-	FILE *fp = fopen(filename, "wb");
-	if (!fp) return 1;
-	long written = fwrite(lenet, sizeof(LeNet5), 1, fp);
-	fclose(fp);
-	return 0;
-}
-
-int load(LeNet5 *lenet, char filename[])
-{
-	FILE *fp = fopen(filename, "rb");
-	if (!fp) return 1;
-	size_t suppress = fread(lenet, sizeof(LeNet5), 1, fp);
-	fclose(fp);
-	return 0;
-}
-
 int loadQuantized(LeNet5Quantized *quant, char filename[])
 {
 	FILE *fp = fopen(filename, "rb");
