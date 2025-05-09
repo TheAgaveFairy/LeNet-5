@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include "model.h"
+//#include "model.h"
 
 #define FILE_TRAIN_IMAGE		"train-images-idx3-ubyte"
 #define FILE_TRAIN_LABEL		"train-labels-idx1-ubyte"
@@ -173,8 +173,10 @@ int main()
 	}
 	//printf("Finished csv run\n");
 	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 100.0) / num_to_test);
-	if (DEBUG) printf("\n\n\n");
-	if (DEBUG) PrintModel(lenet);
+	
+	//must include model.h to call PrintModel
+	//if (DEBUG) printf("\n\n\n");
+	//if (DEBUG) PrintModel(lenet);
 
 	return EXIT_SUCCESS;
 }
