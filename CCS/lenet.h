@@ -43,5 +43,5 @@ typedef struct Feature // 36136B
 	float output[OUTPUT];
 }Feature;
 
-uint8 QuantPredict(LeNet5Quantized *model, image input, uint8 count);
+uint8 QuantPredict(LeNet5Quantized *model, const image input, uint8 count);
 

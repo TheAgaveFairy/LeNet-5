@@ -9,6 +9,12 @@
 #include <stdio.h>
 #include <float.h>
 
+#pragma diag_suppress=1544 // loop counting up
+#pragma diag_suppress=1545 // int vs unsigned int array access
+#pragma diag_suppress=2553 // int vs unsigned int array access
+#pragma diag_suppress=1531 // floating point ops in FRAM are bad
+#pragma diag_suppress=1530 // divide in FRAM is bad - image normalization could be moved to RAM
+
 #define DEBUG 0
 
 #define GETLENGTH(array) (sizeof(array)/sizeof(*(array)))
@@ -87,16 +93,6 @@ float rangeAbsMax(float *arr, size_t n) {
 
 inline int8_t quantizeDown(float in, float s) {
 	int8_t answer = (in / s) * RANGELIMIT; // out [-127, 127]
-	
-	if (answer > 127.0f) { // do i need this? please compile out i pray
-		//fprintf(stderr, "Quantize Down out of range!\n");
-		answer = 127.0f;
-	}
-	if (answer < -127.0f) {
-		//fprintf(stderr, "Quantize Down out of range!\n");
-
-		answer = -127.0f;
-	}
 	return answer;
 }
 
@@ -239,7 +235,7 @@ static void QuantForward(LeNet5Quantized *model, Feature *features, float(*actio
 	}
 }
 
-static inline void load_input(Feature *features, image input)
+static inline void load_input(Feature *features, const image input)
 {
 	float (*layer0)[LENGTH_FEATURE0][LENGTH_FEATURE0] = features->input;
 	const long sz = sizeof(image) / sizeof(**input);
@@ -286,32 +282,8 @@ static uint8 get_result(Feature *features, uint8 count)
 #pragma PERSISTENT(features)
 Feature features = {0};
 
-uint8 QuantPredict(LeNet5Quantized *model, image input, uint8 count) {
+uint8 QuantPredict(LeNet5Quantized *model, const image input, uint8 count) {
 	load_input(&features, input);
 	QuantForward(model, &features, relu);
 	return get_result(&features, count);
 }
-
-float ConvertLayer(float *in_layer, int8_t *out_layer, size_t input_size) {
-	size_t num_elems = input_size / sizeof(float);
-	float scale = rangeAbsMax(in_layer, num_elems);
-
-
-	float *pos = in_layer;
-	for (size_t i = 0; i < num_elems; i++) {
-		out_layer[i] = quantizeDown(pos[i], scale);
-	}
-
-	int printout = 1;
-	if (printout) {
-
-	pos = in_layer;
-	//printf("Quantized layer with scaling factor %lf:\n", scale);
-	for (size_t i = 0; i < num_elems; i++) {
-		printf("%d, ", out_layer[i]);
-	}
-		printf("\n");
-	}
-	return scale;
-}
-
