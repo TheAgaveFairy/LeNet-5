@@ -28,7 +28,7 @@ int main(void)
 		i--;
 	}
 	
-	printf("%d/%d = %lf%% accuracy from csv testing.\n", correct, num_to_test, (double)(correct * 100.0) / num_to_test);
+	printf("%d/%d.\n", correct, num_to_test);
 
 	return EXIT_SUCCESS;
 }
