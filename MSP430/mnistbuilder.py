@@ -16,18 +16,11 @@ def readFile(filename='mnist_test-1.csv'):
     return labels, rows
 
 
-def formatRow(row):
-    label = row[0]
-    row = row[1:]
-    temp = ", ".join(row)
-    print(temp)
-    return label, temp
-
-
-def buildHeader(labels, rows, filename='mnist.h'):
+def buildHeader(labels, flattened, filename='mnist.h'):
     with open(filename, 'w') as file:
         file.write("#include <stdint.h>\n")
-        file.write(f"#define MNISTSIZE {len(rows[0])}\n")
+        file.write('#include "lenet.h"\n')
+        # file.write(f"#define MNISTSIZE {len(flattened[0])}\n")
         file.write(f"#define NUMROWS {len(labels)}\n\n")
 
         file.write("#pragma PERSISTENT(labels)\n")
@@ -37,13 +30,21 @@ def buildHeader(labels, rows, filename='mnist.h'):
         file.write("};\n\n")
 
         file.write("#pragma PERSISTENT(mnist)\n")
-        file.write("const static uint8_t mnist[][MNISTSIZE] = {\n")
-        for row in rows:
-            label, row = formatRow(row)
+        file.write("const static image mnist[] = {\n")
 
+        for flat in flattened:
             file.write("\t{")
-            file.write(str(row[:]))  # strip off [ ]
-            file.write("},\n")
+            for row in range(28):
+                file.write("\n\t\t{")
+                for col in range(28):
+                    idx = row * 28 + col
+                    file.write(f"{flat[idx]}")
+                    if col < 27:
+                        file.write(", ")
+                file.write("}")
+                if row < 27:
+                    file.write(",")
+            file.write("\n\t},\n")
         file.write("};")
 
 
@@ -54,7 +55,7 @@ def main():
     else:
         labels, rows = readFile()
 
-    NUM_ROWS = 10
+    NUM_ROWS = 2
     labels = labels[:NUM_ROWS]
     rows = rows[:NUM_ROWS]
     buildHeader(labels, rows)
