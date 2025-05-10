@@ -4,8 +4,9 @@
 #include <time.h>
 #include <string.h>
 //#include "model.h"
-//#include "lenet5_model.h"
-#include "quantweights.h"
+#include "lenet5_model.h"
+//#include "quantweights.h"
+
 
 #define FILE_TRAIN_IMAGE		"train-images-idx3-ubyte"
 #define FILE_TRAIN_LABEL		"train-labels-idx1-ubyte"
@@ -114,7 +115,8 @@ int main()
 		return 1;
 	}
 	
-	LeNet5Quantized *lenet = (LeNet5Quantized *) malloc(sizeof(LeNet5Quantized));
+	//LeNet5Quantized *lenet = (LeNet5Quantized *) malloc(sizeof(LeNet5Quantized));
+	LeNet5Quantized *lenet = &lenet5_model;
 	if (!lenet) {
 		fprintf(stderr, "Failed to allocate LeNet5\n");
 		return 1;
@@ -145,5 +147,6 @@ int main()
 	//if (DEBUG) printf("\n\n\n");
 	//if (DEBUG) PrintModel(lenet);
 
+	printf("SIZE OF FEATURE: %lu\n.", sizeof(Feature));
 	return EXIT_SUCCESS;
 }

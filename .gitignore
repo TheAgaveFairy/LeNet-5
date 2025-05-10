@@ -4,6 +4,7 @@
 
 main
 pdbackup*
+matrix_ex3_mpy_q15.c
 
 # User-specific files
 *.suo

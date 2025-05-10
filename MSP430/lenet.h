@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-//#include "lenet5_model.h"
+#include "lenet5_model.h"
 
 #define LENGTH_KERNEL	5
 
@@ -54,7 +54,7 @@ typedef struct LeNet5
 	float bias5_6[OUTPUT];
 
 }LeNet5;
-
+/*
 typedef struct LeNet5Quantized {
 	int8_t weight0_1[INPUT][LAYER1][LENGTH_KERNEL][LENGTH_KERNEL];
 	int8_t weight2_3[LAYER2][LAYER3][LENGTH_KERNEL][LENGTH_KERNEL];
@@ -77,7 +77,7 @@ typedef struct LeNet5Quantized {
 	float b4_5s;
 	float b5_6s;
 } LeNet5Quantized;
-
+*/
 typedef struct Feature
 {
 	float input[INPUT][LENGTH_FEATURE0][LENGTH_FEATURE0];
