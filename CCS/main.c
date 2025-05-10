@@ -20,8 +20,8 @@ int main(void)
 	int correct = 0;
 	int num_to_test = 0;
 	int label;
-	unsigned int i = NUMROWS - 1;
-	while(i > 0) { // test 100 images
+	unsigned int i = 0;
+	while(i < NUMROWS) { // test 100 images
 		num_to_test++;
 		int p = QuantPredict(lenet, mnist[i], 10); // lets go look at this
 		if (p == label) correct++;
