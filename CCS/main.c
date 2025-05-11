@@ -28,7 +28,8 @@ int main(void)
 		i--;
 	}
 	
-	printf("%d/%d.", correct, num_to_test);
+
+	printf("%d/%d.\n", correct, num_to_test);
 
 	return EXIT_SUCCESS;
 }
