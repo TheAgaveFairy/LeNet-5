@@ -70,7 +70,8 @@ typedef struct LeNet5Quantized {
 
 /* Model weights stored in FRAM */
 #pragma PERSISTENT(lenet5_model)
-const static LeNet5Quantized lenet5_model = {
+//#pragma DATA_SECTION(lenet5_model, ".fram2")
+static LeNet5Quantized lenet5_model = {
     /* weight0_1 */
     {
     {

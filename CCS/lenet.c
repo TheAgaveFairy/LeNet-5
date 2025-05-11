@@ -280,6 +280,7 @@ static uint8 get_result(Feature *features, uint8 count)
 }
 
 #pragma PERSISTENT(features)
+//#pragma DATA_SECTION(features, ".fram2")
 Feature features = {0};
 
 uint8 QuantPredict(LeNet5Quantized *model, const image input, uint8 count) {

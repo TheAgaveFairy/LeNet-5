@@ -31,7 +31,6 @@
 typedef unsigned char uint8;
 typedef uint8 image[28][28];
 
-
 typedef struct Feature // 36136B
 {
 	float input[INPUT][LENGTH_FEATURE0][LENGTH_FEATURE0];
