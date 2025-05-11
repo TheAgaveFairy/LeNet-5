@@ -113,7 +113,7 @@ float UnpackLayer(int8_t *in_layer, float *out_layer, float scale, size_t n) {
 
 // Define a persistent buffer in FRAM for one channel of weights
 #pragma PERSISTENT(w4_5buffer)
-float w4_5buffer[LAYER5][LENGTH_KERNEL][LENGTH_KERNEL] = {0}; // COULDVE DONE ALL 16 CHANNELS AT ONCE INTO FRAM[2] BUT WHATEVER. 3k
+float w4_5buffer[LAYER5][LENGTH_KERNEL][LENGTH_KERNEL] = {0};
 
 // Convolution function for layer 4-5
 void convolve_layer4_5(
@@ -212,7 +212,6 @@ static void QuantForward(LeNet5Quantized *model, Feature *features, float(*actio
 	SUBSAMP_MAX_FORWARD(features->layer3, features->layer4);
 	
 	{
-		
 		convolve_layer4_5(
         	features->layer4,
         	features->layer5,

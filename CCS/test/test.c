@@ -1,12 +1,8 @@
-#pragma once
-
-#include <stdint.h>
-#include <stddef.h>
-#include "lenet5_model.h"
-
-#define LENGTH_KERNEL	5
+#include <stdio.h>
 
 #ifndef LENGTH_FEATURE0
+
+#define LENGTH_KERNEL 5
 
 #define LENGTH_FEATURE0	32
 #define LENGTH_FEATURE1	(LENGTH_FEATURE0 - LENGTH_KERNEL + 1)
@@ -42,5 +38,16 @@ typedef struct Feature // 36,136B
 	float output[OUTPUT];
 }Feature;
 
-uint8 QuantPredict(LeNet5Quantized *model, const image input, uint8 count);
+#define HELPER(x) printf(#x " %luB\n", sizeof(x))
 
+int main(){
+	Feature feature = {0};
+	HELPER(feature.input);
+	HELPER(feature.layer1);
+	HELPER(feature.layer2);
+	HELPER(feature.layer3);
+	HELPER(feature.layer4);
+	HELPER(feature.layer5);
+	HELPER(feature.output);
+
+}

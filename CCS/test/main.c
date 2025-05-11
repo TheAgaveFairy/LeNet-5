@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <msp430.h>
+//#include <msp430.h>
 
 #include "lenet.h"
 #include "lenet5_model.h"
@@ -22,9 +22,9 @@ int main(void)
 	int correct = 0;
 	int label;
 	unsigned int i = 0;
-	while(i < NUMROWS) { // NUMROWS defined in mnist.h
-		label = labels[i];
+	while(i < NUMROWS) { // test 100 images
 		int p = QuantPredict(lenet, mnist[i], 10); // lets go look at this
+		label = labels[i];
 		if (p == label) correct++;
 		i++;
 	}
