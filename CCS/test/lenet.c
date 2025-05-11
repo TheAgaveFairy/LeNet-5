@@ -289,7 +289,7 @@ Feature features = {0};
 //float input_buffer[INPUT][LENGTH_FEATURE0][LENGTH_FEATURE0];
 
 uint8 QuantPredict(LeNet5Quantized *model, const image input, uint8 count) {
-
+	memset(&features, 0, sizeof(Feature));
 	load_input(&features, input);
 	QuantForward(model, &features, relu);
 	return get_result(&features, count);

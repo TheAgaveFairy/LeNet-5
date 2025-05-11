@@ -22,9 +22,10 @@ int main(void)
 	int correct = 0;
 	int label;
 	unsigned int i = 0;
-	while(i < NUMROWS) { // test 100 images
+	while(i < NUMROWS) {
 		int p = QuantPredict(lenet, mnist[i], 10); // lets go look at this
 		label = labels[i];
+		//printf("predict: %d was: %d\n", p, label);
 		if (p == label) correct++;
 		i++;
 	}
