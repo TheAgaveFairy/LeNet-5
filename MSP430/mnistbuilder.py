@@ -49,13 +49,20 @@ def buildHeader(labels, flattened, filename='mnist.h'):
 
 
 def main():
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
-        labels, rows = readFile(filename)
-    else:
-        labels, rows = readFile()
+    argc = len(sys.argv)
+    if argc not in range(2, 4):
+        print("Usage: ./this.py N filename, where N is the number of images to generate, and optional filename for the csv")
+        exit(69)
 
-    NUM_ROWS = 2
+    # num_rows = sys.argv[1]
+
+    if argc == 2:
+        labels, rows = readFile()
+    elif argc == 3:
+        filename = sys.argv[2]
+        labels, rows = readFile(filename)
+
+    NUM_ROWS = int(sys.argv[1])
     labels = labels[:NUM_ROWS]
     rows = rows[:NUM_ROWS]
     buildHeader(labels, rows)
